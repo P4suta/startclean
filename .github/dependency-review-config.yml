@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: 2026 startclean contributors <https://github.com/P4suta/startclean/graphs/contributors>
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+fail_on_severity: moderate
+fail_on_scopes:
+  - runtime
+  - unknown
+
+vulnerability_check: true
+license_check: true
+allow_licenses:
+  - 0BSD
+  - Apache-2.0
+  - BSD-2-Clause
+  - BSD-3-Clause
+  - CC0-1.0
+  - ISC
+  - MIT
+  - MIT-0
+  - Unlicense
+  - Zlib
+
+retry_on_snapshot_warnings: true
+retry_on_snapshot_warnings_timeout: 60
+show_openssf_scorecard: true
+warn_on_openssf_scorecard_level: 3
+show_patched_versions: true

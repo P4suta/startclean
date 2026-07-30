@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2026 startclean contributors <https://github.com/P4suta/startclean/graphs/contributors>
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+profile: coverage.out
+
+threshold:
+  # This is below the measured Windows baseline while preventing silent
+  # regression without rewarding low-value assertion padding.
+  total: 65
+
+force-annotation-comment: true

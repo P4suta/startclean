@@ -27,6 +27,8 @@ func TestClassifier(t *testing.T) {
 			switch root {
 			case `D:\`:
 				return DriveRemovable, nil
+			case `E:\`:
+				return DriveOther, nil
 			case `Z:\`:
 				return DriveNetwork, nil
 			default:
@@ -61,16 +63,53 @@ func TestClassifier(t *testing.T) {
 		{"UNC target", `\\server\share\app.exe`, ClassificationUnverifiable, ReasonNetworkTarget},
 		{"removable target", `D:\app.exe`, ClassificationUnverifiable, ReasonRemovableTarget},
 		{"mapped network target", `Z:\app.exe`, ClassificationUnverifiable, ReasonNetworkTarget},
+		{"unsupported drive type", `E:\app.exe`, ClassificationUnverifiable, ReasonUnsupportedDrive},
 		{"stat permission failure", permission, ClassificationError, ReasonAccessDenied},
 	}
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			_, classification, reason, _ := classifier.Classify(test.target)
 			if classification != test.classification || reason != test.reason {
 				t.Fatalf("Classify(%q) = (%s, %s), want (%s, %s)",
 					test.target, classification, reason, test.classification, test.reason)
+			}
+		})
+	}
+}
+
+func TestClassifierDependencyFailuresHaveStableReasonCodes(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		classifier Classifier
+		reason     ReasonCode
+	}{
+		{
+			name: "environment expansion failure",
+			classifier: Classifier{
+				ExpandEnv: func(string) (string, error) { return "", errors.New("expand failed") },
+				DriveKind: func(string) (DriveKind, error) { return DriveFixed, nil },
+				Stat:      func(string) (fs.FileInfo, error) { return nil, fs.ErrNotExist },
+			},
+			reason: ReasonInspectionFailure,
+		},
+		{
+			name: "unexpected stat failure",
+			classifier: Classifier{
+				ExpandEnv: func(value string) (string, error) { return value, nil },
+				DriveKind: func(string) (DriveKind, error) { return DriveFixed, nil },
+				Stat:      func(string) (fs.FileInfo, error) { return nil, errors.New("I/O failure") },
+			},
+			reason: ReasonInspectionFailure,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			_, classification, reason, err := test.classifier.Classify(`C:\app.exe`)
+			if err == nil || classification != ClassificationError || reason != test.reason {
+				t.Fatalf("Classify() = (%s, %s, %v), want (error, %s, error)", classification, reason, err, test.reason)
 			}
 		})
 	}

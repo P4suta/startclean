@@ -14,18 +14,27 @@ import (
 
 var ErrElevationRequired = errors.New("elevation is required for all-users shortcuts")
 
-type MutationFS interface {
+var (
+	ErrDeletionOutsideRoot = errors.New("deletion handle resolves outside the approved root")
+	ErrUnsafeDeletionPath  = errors.New("deletion path is a directory, reparse point, or unsupported file")
+)
+
+type InspectionFS interface {
 	Lstat(string) (fs.FileInfo, error)
-	Remove(string) error
-	ReadDir(string) ([]fs.DirEntry, error)
 }
 
 type OSFS struct{}
 
 func (OSFS) Lstat(path string) (fs.FileInfo, error) { return os.Lstat(path) }
-func (OSFS) Remove(path string) error               { return os.Remove(path) }
-func (OSFS) ReadDir(path string) ([]fs.DirEntry, error) {
-	return os.ReadDir(path)
+
+// GuardedRemover owns the platform-specific, handle-based mutation boundary.
+// DeleteValidated must hold the exact candidate file against rename or
+// replacement, prove its final path is inside root, call validate while that
+// handle remains locked, and delete through that handle or an identity-matched
+// handle reopened fail-closed after releasing a validation-only lock.
+type GuardedRemover interface {
+	DeleteValidated(root, path string, validate func() error) error
+	RemoveEmptyDirectory(root, path string) (bool, error)
 }
 
 type ShellNotifier interface {
@@ -42,7 +51,8 @@ type Cleaner struct {
 	Roots      Roots
 	Reader     LinkReader
 	Classifier Classifier
-	FS         MutationFS
+	FS         InspectionFS
+	Remover    GuardedRemover
 	Elevated   bool
 	Notifier   ShellNotifier
 }
@@ -70,6 +80,9 @@ func (c Cleaner) Clean(items []Item) (CleanResult, error) {
 			return result, ErrElevationRequired
 		}
 	}
+	if c.Remover == nil {
+		return result, errors.New("safe handle-based deletion service is unavailable")
+	}
 
 	// Validate the entire selection before the first mutation. This prevents a
 	// changed shortcut from causing a surprising partial cleanup.
@@ -89,15 +102,24 @@ func (c Cleaner) Clean(items []Item) (CleanResult, error) {
 		notifier = NopNotifier{}
 	}
 	for _, item := range items {
-		if err := c.FS.Remove(item.LinkPath); err != nil {
+		root := c.Roots.For(item.Scope)
+		err := c.Remover.DeleteValidated(root, item.LinkPath, func() error {
+			// This second validation happens while the platform holds the exact
+			// file handle without FILE_SHARE_DELETE. It closes the gap between
+			// selection-wide preflight and the irreversible mutation.
+			return c.revalidate(item)
+		})
+		if err != nil {
 			result.Errors = append(result.Errors, CleanError{
-				LinkPath: item.LinkPath, ReasonCode: ReasonDeleteFailure, Error: err.Error(),
+				LinkPath: item.LinkPath, ReasonCode: reasonFromDeletion(err), Error: err.Error(),
 			})
-			continue
+			// Stop after the first guarded failure. Earlier items may already be
+			// gone, but no later path should be mutated after safety state changes.
+			break
 		}
 		result.Deleted++
 		notifier.Deleted(item.LinkPath)
-		pruned, errs := c.prune(filepath.Dir(item.LinkPath), c.Roots.For(item.Scope), notifier)
+		pruned, errs := c.prune(filepath.Dir(item.LinkPath), root, notifier)
 		result.Pruned += pruned
 		result.Errors = append(result.Errors, errs...)
 	}
@@ -121,6 +143,20 @@ func reasonFromValidation(err error) ReasonCode {
 		return validation.reason
 	}
 	return ReasonChangedSinceScan
+}
+
+func reasonFromDeletion(err error) ReasonCode {
+	switch {
+	case errors.Is(err, ErrDeletionOutsideRoot):
+		return ReasonOutsideApprovedRoot
+	case errors.Is(err, ErrUnsafeDeletionPath):
+		return ReasonUnsafeLink
+	}
+	var validation validationError
+	if errors.As(err, &validation) {
+		return validation.reason
+	}
+	return ReasonDeleteFailure
 }
 
 func (c Cleaner) revalidate(item Item) error {
@@ -156,16 +192,12 @@ func (c Cleaner) prune(start, root string, notifier ShellNotifier) (int, []Clean
 	var count int
 	var cleanErrors []CleanError
 	for current := filepath.Clean(start); insideRoot(root, current) && !samePath(current, root); current = filepath.Dir(current) {
-		entries, err := c.FS.ReadDir(current)
+		removed, err := c.Remover.RemoveEmptyDirectory(root, current)
 		if err != nil {
 			cleanErrors = append(cleanErrors, CleanError{LinkPath: current, ReasonCode: ReasonPruneFailure, Error: err.Error()})
 			break
 		}
-		if len(entries) != 0 {
-			break
-		}
-		if err := c.FS.Remove(current); err != nil {
-			cleanErrors = append(cleanErrors, CleanError{LinkPath: current, ReasonCode: ReasonPruneFailure, Error: err.Error()})
+		if !removed {
 			break
 		}
 		count++

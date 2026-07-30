@@ -6,8 +6,7 @@ project_name: startclean
 
 before:
   hooks:
-    - go mod tidy
-    - go generate ./...
+    - go run ./cmd/devtool release-source
 
 builds:
   - id: startclean
@@ -41,9 +40,28 @@ checksum:
   algorithm: sha256
 
 sboms:
-  - artifacts: archive
+  - id: spdx
+    artifacts: archive
     documents:
       - "{{ .ArtifactName }}.spdx.json"
+    cmd: syft
+    args:
+      - $artifact
+      - --output
+      - spdx-json=$document
+      - --enrich
+      - all
+  - id: cyclonedx
+    artifacts: archive
+    documents:
+      - "{{ .ArtifactName }}.cdx.json"
+    cmd: syft
+    args:
+      - $artifact
+      - --output
+      - cyclonedx-json=$document
+      - --enrich
+      - all
 
 changelog:
   sort: asc
@@ -54,4 +72,7 @@ changelog:
       - "^chore:"
 
 release:
+  draft: true
+  replace_existing_draft: true
+  replace_existing_artifacts: true
   prerelease: auto

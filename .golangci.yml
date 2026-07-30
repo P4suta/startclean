@@ -9,28 +9,38 @@ run:
 linters:
   default: standard
   enable:
+    - bidichk
     - bodyclose
+    - contextcheck
+    - durationcheck
     - errorlint
+    - errname
     - exhaustive
+    - fatcontext
+    - gocheckcompilerdirectives
+    - gochecksumtype
     - gocritic
+    - gomoddirectives
     - gosec
+    - makezero
     - misspell
+    - modernize
+    - musttag
     - nilerr
     - nilnil
+    - noctx
     - nolintlint
     - prealloc
+    - reassign
     - staticcheck
     - testifylint
+    - thelper
+    - tparallel
     - unconvert
     - unparam
+    - usestdlibvars
+    - usetesting
     - wastedassign
-  exclusions:
-    rules:
-      - path: internal/platform/system_windows.go
-        linters: [gosec]
-      - path: cmd/gencompletion/main.go
-        linters: [gosec]
-
 formatters:
   enable:
     - gofmt

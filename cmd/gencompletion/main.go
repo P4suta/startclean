@@ -4,6 +4,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,7 +13,21 @@ import (
 )
 
 func main() {
-	outputDirectory := filepath.Join("..", "..", "completions")
+	outputDirectoryFlag := flag.String(
+		"output",
+		"",
+		"directory in which to write generated completion files",
+	)
+	flag.Parse()
+	if flag.NArg() != 0 {
+		_, _ = fmt.Fprintln(os.Stderr, "gencompletion: unexpected positional arguments")
+		os.Exit(2)
+	}
+
+	outputDirectory := *outputDirectoryFlag
+	if outputDirectory == "" {
+		outputDirectory = filepath.Join("..", "..", "completions")
+	}
 	if err := os.MkdirAll(outputDirectory, 0o750); err != nil {
 		panic(err)
 	}
@@ -22,7 +37,9 @@ func main() {
 		"zsh":        "_startclean",
 		"fish":       "startclean.fish",
 	} {
-		file, err := os.Create(filepath.Join(outputDirectory, filename))
+		// outputDirectory is the requested generation root and filename comes
+		// from the fixed completion allowlist above.
+		file, err := os.Create(filepath.Join(outputDirectory, filename)) //nolint:gosec
 		if err != nil {
 			panic(err)
 		}

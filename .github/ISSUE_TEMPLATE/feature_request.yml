@@ -1,0 +1,78 @@
+# SPDX-FileCopyrightText: 2026 startclean contributors <https://github.com/P4suta/startclean/graphs/contributors>
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+name: Feature request
+description: Propose a focused improvement to startclean.
+title: "feature: "
+labels:
+  - enhancement
+  - needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please describe the user problem before the proposed implementation.
+        startclean deliberately has a narrow deletion scope, so explain any safety
+        implications clearly.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is difficult today, and who is affected?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior and user experience you would like.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What workarounds or other designs have you considered?
+
+  - type: dropdown
+    id: interface
+    attributes:
+      label: Affected interface
+      multiple: true
+      options:
+        - Interactive TUI
+        - Command-line flags or output
+        - Shortcut detection
+        - Deletion safety
+        - Installation or release packaging
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety and compatibility impact
+      description: Explain effects on deletion scope, elevation, automation, or Windows compatibility.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add mockups, examples, or links that help explain the request.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Submission checklist
+      options:
+        - label: I searched open and closed issues for a similar request.
+          required: true
+        - label: This request stays within startclean's purpose of safely cleaning stale Start Menu shortcuts.
+          required: true

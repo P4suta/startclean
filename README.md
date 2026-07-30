@@ -50,6 +50,12 @@ From PowerShell, run the executable from its extracted directory:
 .\startclean.exe scan
 ```
 
+To enable completion in the current PowerShell session:
+
+```powershell
+.\startclean.exe completion powershell | Out-String | Invoke-Expression
+```
+
 ```text
 startclean
 startclean clean
@@ -71,7 +77,8 @@ Interactive keys:
 - `q` or `Esc` cancels without deleting.
 
 All-users entries are shown but locked when not elevated. The detail panel shows
-an exact `Start-Process ... -Verb RunAs` command using the current executable.
+an exact `Start-Process ... -Verb RunAs` command using the current executable;
+it relaunches the interactive review without preselecting or deleting anything.
 There is no automatic UAC elevation.
 
 For automation, deletion requires both `--all` and `--yes`. A non-TTY invocation
@@ -92,25 +99,69 @@ JSON output has a stable `schema_version: 1` envelope. Global
 
 ## Development
 
-The supported runtime targets are Windows x64 and arm64. Install the exact
-toolchain and run the complete local gate:
+The supported runtime targets are Windows x64 and arm64. `mise.toml` provides a
+fully version-pinned Go and development-tool environment; `mise.lock` records
+resolved URLs, checksums, and available upstream provenance for Windows x64,
+Windows arm64, and Linux x64. After activating mise, install that environment
+and run the canonical local gate:
 
 ```powershell
 mise install
-just setup
-just ci
+go run ./cmd/devtool ci
 ```
 
-Useful focused recipes include `just format`, `just generate`, `just lint`,
-`just test`, `just integration`, `just coverage`, `just security`,
-`just reuse`, and `just release-check`.
+The Go-based devtool is the source of development workflow logic; it does not
+depend on Bash or PowerShell scripts. Use `go run ./cmd/devtool help` to list
+focused commands such as `format`, `generate`, `lint`, `test`, `integration`,
+`stress`, `coverage`, `module-verify`, `race`, `fuzz`, `security`, `reuse`, `build`,
+`release-source`, `release-check`, and `release-smoke`.
+
+`just` recipes and Lefthook hooks are optional thin wrappers around the same
+`go run ./cmd/devtool ...` commands. They add convenience, not a second task
+implementation.
+
+The generated Bash, Zsh, Fish, and PowerShell files under `completions/` are
+command-completion assets shipped with releases. They are not development
+scripts and do not introduce a shell dependency into the development workflow.
 
 Integration tests create real Shell Links only under temporary test directories.
 Automated tests never write to or delete from the live Start Menu.
 
+The quality gates deliberately overlap: table-driven and failure-injection
+tests exercise policy, golden tests freeze the JSON contract, the standard Go
+race detector checks concurrency, native Go fuzzing stresses containment and
+conservative classification, and Windows integration tests use real COM Shell
+Links. `golangci-lint`, `go vet`, CodeQL, `govulncheck`, OSV-Scanner, Gitleaks,
+Dependency Review, OpenSSF Scorecard, REUSE, and a 65% non-regression coverage
+floor cover different classes of defects. Separate floors protect the deletion
+policy core at 80% and the Windows native/COM boundary at 65%, preventing broad
+packages from masking regressions in safety-critical code. The heavier race,
+fuzz, and release
+snapshot checks run as independent GitHub Actions jobs. When fuzzing discovers
+a new crashing input, CI retains the generated reproducer as a short-lived
+artifact instead of losing it with the runner.
+
 Release tags matching `v*` produce unsigned Windows x64 and arm64 ZIP archives,
-checksums, SPDX SBOMs, completions, and provenance attestations. Binaries will
-remain unsigned until a code-signing certificate is available.
+SHA-256 checksums, Syft-generated SPDX 2.3 and CycloneDX SBOMs, completions, and
+Sigstore-backed GitHub artifact attestations. The release smoke test builds both
+architectures, inspects each ZIP, validates both SBOM formats through Syft, and
+checks every published digest before a tag is accepted. Binaries remain
+unsigned until a code-signing certificate is available. Release automation
+assembles a retryable draft and publishes it only after every asset and
+attestation succeeds, so immutable releases never expose a half-finished set.
+
+After downloading a release, PowerShell users can inspect its checksum and
+verify its build provenance with the GitHub CLI:
+
+```powershell
+Get-FileHash .\startclean_*_Windows_x86_64.zip -Algorithm SHA256
+Get-Content .\checksums.txt
+gh attestation verify .\startclean_*_Windows_x86_64.zip --repo P4suta/startclean
+```
+
+Artifact attestations establish which repository workflow produced a file;
+they do not replace code review or vulnerability analysis. See
+[GitHub's artifact-attestation documentation](https://docs.github.com/en/actions/concepts/security/artifact-attestations).
 
 ## License
 
