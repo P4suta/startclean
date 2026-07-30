@@ -20,6 +20,23 @@ func TestExplorerMousetrapIsDisabled(t *testing.T) {
 	}
 }
 
+func TestElevationCommandsKeepInteractiveAndAutomationIntentSeparate(t *testing.T) {
+	t.Parallel()
+
+	interactive := interactiveElevationCommand()
+	if !strings.Contains(interactive, "-ArgumentList 'clean' -Verb RunAs") {
+		t.Fatalf("interactive elevation command is incomplete: %s", interactive)
+	}
+	if strings.Contains(interactive, "--all") || strings.Contains(interactive, "--yes") {
+		t.Fatalf("interactive elevation command would bypass review: %s", interactive)
+	}
+
+	automation := automationElevationCommand()
+	if !strings.Contains(automation, "-ArgumentList 'clean','--all','--yes' -Verb RunAs") {
+		t.Fatalf("automation elevation command lost explicit consent flags: %s", automation)
+	}
+}
+
 func TestScanJSONSchemaEnvelope(t *testing.T) {
 	t.Parallel()
 	value := core.Envelope(core.ScanResult{
@@ -74,6 +91,23 @@ func TestInvalidCommandUsesUsageExitCode(t *testing.T) {
 	t.Parallel()
 	var stdout, stderr bytes.Buffer
 	code, err := Execute([]string{"definitely-not-a-command"}, strings.NewReader(""), &stdout, &stderr)
+	if err == nil || code != ExitUsage {
+		t.Fatalf("Execute() = (%d, %v), want (%d, error)", code, err, ExitUsage)
+	}
+}
+
+func TestNOColorOverridesAlways(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	application := app{colorMode: "always", out: &bytes.Buffer{}}
+	if application.colorEnabled() {
+		t.Fatal("NO_COLOR must override --color always")
+	}
+}
+
+func TestInvalidColorUsesUsageExitCode(t *testing.T) {
+	t.Parallel()
+	var stdout, stderr bytes.Buffer
+	code, err := Execute([]string{"--color", "rainbow", "version"}, strings.NewReader(""), &stdout, &stderr)
 	if err == nil || code != ExitUsage {
 		t.Fatalf("Execute() = (%d, %v), want (%d, error)", code, err, ExitUsage)
 	}

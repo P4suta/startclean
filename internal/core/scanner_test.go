@@ -5,6 +5,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -41,6 +42,61 @@ func TestScannerRecognizesCaseInsensitiveLinkExtensions(t *testing.T) {
 			t.Fatal(".url files must be left out of the scan")
 		}
 	}
+}
+
+func TestScannerMarksUnreadableLinkAsAccessDenied(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	link := filepath.Join(root, "denied.lnk")
+	if err := os.WriteFile(link, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	classifier := Classifier{
+		ExpandEnv: func(value string) (string, error) { return value, nil },
+		DriveKind: func(string) (DriveKind, error) { return DriveFixed, nil },
+		Stat:      os.Stat,
+	}
+	result := (Scanner{
+		Roots: Roots{User: root}, Reader: errorReader{err: fs.ErrPermission}, Classifier: classifier,
+	}).Scan(context.Background(), ScopeUser)
+	if result.Summary.Errors != 1 || result.Items[0].ReasonCode != ReasonAccessDenied {
+		t.Fatalf("unexpected result: %+v", result)
+	}
+}
+
+func TestScannerReportsUnavailableKnownFolder(t *testing.T) {
+	t.Parallel()
+	result := (Scanner{}).Scan(context.Background(), ScopeCommon)
+	if result.Summary.Errors != 1 || len(result.Items) != 1 {
+		t.Fatalf("unexpected result: %+v", result)
+	}
+	item := result.Items[0]
+	if item.Scope != ScopeCommon || item.ReasonCode != ReasonWalkFailure || !item.ElevationRequired {
+		t.Fatalf("unexpected unavailable-root item: %+v", item)
+	}
+}
+
+func TestScannerCancellationIsNotReportedAsAnInspectionError(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "ignored.lnk"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	result := (Scanner{Roots: Roots{User: root}}).Scan(ctx, ScopeUser)
+	if result.Summary.Errors != 0 || len(result.Items) != 0 {
+		t.Fatalf("cancelled scan emitted misleading items: %+v", result)
+	}
+}
+
+type errorReader struct{ err error }
+
+func (r errorReader) Target(string) (string, error) {
+	if r.err == nil {
+		return "", errors.New("missing configured error")
+	}
+	return "", r.err
 }
 
 func TestScannerReportsParseFailures(t *testing.T) {

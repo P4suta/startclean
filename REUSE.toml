@@ -7,7 +7,7 @@ SPDX-PackageSupplier = "startclean contributors"
 SPDX-PackageDownloadLocation = "https://github.com/P4suta/startclean"
 
 [[annotations]]
-path = [".gitignore", "go.sum", "completions/**"]
+path = [".gitignore", "go.sum", "mise.lock", "completions/**", "internal/cli/testdata/**"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 startclean contributors <https://github.com/P4suta/startclean/graphs/contributors>"
 SPDX-License-Identifier = "MIT OR Apache-2.0"

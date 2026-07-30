@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "data": {
+    "roots": {
+      "user": "C:\\Users\\Alice\\Start Menu\\Programs",
+      "common": "C:\\ProgramData\\Start Menu\\Programs"
+    },
+    "summary": {
+      "scanned": 2,
+      "stale": 1,
+      "healthy": 1,
+      "unverifiable": 0,
+      "errors": 0,
+      "user_stale": 1,
+      "common_stale": 0
+    },
+    "items": [
+      {
+        "scope": "user",
+        "link_path": "C:\\Users\\Alice\\Start Menu\\Programs\\日本語.lnk",
+        "target_path": "C:\\Missing\\日本語.exe",
+        "classification": "stale",
+        "reason_code": "target_missing",
+        "elevation_required": false
+      },
+      {
+        "scope": "common",
+        "link_path": "C:\\ProgramData\\Start Menu\\Programs\\Healthy.lnk",
+        "target_path": "C:\\Program Files\\Healthy.exe",
+        "classification": "healthy",
+        "reason_code": "target_exists",
+        "elevation_required": true
+      }
+    ]
+  }
+}

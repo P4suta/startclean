@@ -2,28 +2,22 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 
 pre-commit:
-  parallel: true
+  parallel: false
   commands:
     format:
-      glob: "*.go"
-      run: gofmt -w {staged_files}
-      stage_fixed: true
+      run: go run ./cmd/devtool format --check
     generated:
-      run: go generate ./... && git diff --exit-code
+      run: go run ./cmd/devtool generate --check
     lint:
-      run: golangci-lint run ./...
+      run: go run ./cmd/devtool lint
     test:
-      run: go test ./...
+      run: go run ./cmd/devtool test
     reuse:
-      run: reuse lint
+      run: go run ./cmd/devtool reuse
     secrets:
-      run: gitleaks protect --staged --redact
+      run: go run ./cmd/devtool secrets
 
 commit-msg:
   commands:
     conventional:
-      run: >-
-        pwsh -NoLogo -NoProfile -Command
-        "$message = Get-Content -Raw '{1}';
-        if ($message -notmatch '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9._-]+\))?!?: .+') {
-        throw 'Commit message must use Conventional Commits.' }"
+      run: go run ./cmd/devtool commit-msg "{1}"

@@ -23,66 +23,101 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Check out source
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 1.26.5
           cache: true
 
+      - name: Verify module integrity
+        run: go run ./cmd/devtool module-verify
+
       - name: Verify formatting
-        shell: pwsh
-        run: |
-          $files = @(gofmt -l .)
-          if ($files.Count -ne 0) {
-            $files
-            throw "gofmt changes required"
-          }
+        run: go run ./cmd/devtool format --check
 
       - name: Verify generated files
-        shell: pwsh
-        run: |
-          go generate ./...
-          git diff --exit-code
+        run: go run ./cmd/devtool generate --check
 
       - name: Vet
-        run: go vet ./...
+        run: go run ./cmd/devtool vet
 
       - name: Unit tests
-        run: go test ./...
+        run: go run ./cmd/devtool test
 
       - name: Real Shell Link COM integration test
-        run: go test -tags=integration ./internal/platform
+        run: go run ./cmd/devtool integration
+
+      - name: Stress Windows deletion safety and COM integration
+        run: go run ./cmd/devtool stress
+
+      - name: Install pinned coverage tool
+        run: go run ./cmd/devtool tools coverage
 
       - name: Coverage
-        shell: pwsh
-        run: |
-          go test -covermode atomic -coverprofile coverage.out ./...
-          go tool cover -func=coverage.out
+        run: go run ./cmd/devtool coverage
 
-      - name: Build Windows x64
-        shell: pwsh
-        run: |
-          $env:CGO_ENABLED = "0"
-          $env:GOARCH = "amd64"
-          go build -trimpath -o dist/startclean-windows-x64.exe ./cmd/startclean
-
-      - name: Build Windows arm64
-        shell: pwsh
-        run: |
-          $env:CGO_ENABLED = "0"
-          $env:GOARCH = "arm64"
-          go build -trimpath -o dist/startclean-windows-arm64.exe ./cmd/startclean
+      - name: Build Windows x64 and arm64
+        run: go run ./cmd/devtool build
 
       - name: Upload test binaries and coverage
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: windows-ci-artifacts
           path: |
-            coverage.out
+            coverage*.out
             dist/*.exe
           if-no-files-found: error
+
+  race:
+    name: Race detector
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 1.26.5
+          cache: true
+
+      - name: Run race-enabled tests
+        run: go run ./cmd/devtool race
+
+  fuzz:
+    name: Safety fuzzing
+    runs-on: windows-2025
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 1.26.5
+          cache: true
+
+      - name: Fuzz deletion-safety invariants
+        run: go run ./cmd/devtool fuzz
+
+      - name: Preserve newly discovered fuzz failures
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fuzz-failure-corpus-${{ github.run_id }}-${{ github.run_attempt }}
+          path: internal/core/testdata/fuzz/**
+          if-no-files-found: ignore
+          retention-days: 14
 
   policy:
     name: Lint, security, license, and release policy
@@ -90,42 +125,60 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Check out source
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 1.26.5
           cache: true
 
-      - name: Install pinned Go tools
-        shell: pwsh
-        run: |
-          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
-          go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
-          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
-          go install github.com/goreleaser/goreleaser/v2@v2.17.1
-          go install github.com/gitleaks/gitleaks/v8@v8.30.1
+      - name: Validate pull request title
+        if: github.event_name == 'pull_request'
+        env:
+          STARTCLEAN_PR_TITLE: ${{ github.event.pull_request.title }}
+        run: go run ./cmd/devtool pr-title
 
-      - name: Go lint
-        run: golangci-lint run ./...
+      - name: Install pinned policy tools
+        run: go run ./cmd/devtool tools policy
 
-      - name: Workflow lint
-        run: actionlint
+      - name: Lint source, workflows, and prose
+        run: go run ./cmd/devtool lint
 
-      - name: Vulnerability scan
-        run: govulncheck ./...
-
-      - name: Secret scan
-        run: gitleaks dir . --redact
+      - name: Vulnerability and secret scans
+        run: go run ./cmd/devtool security
 
       - name: REUSE 3.3 compliance
-        shell: pwsh
-        run: |
-          py -m pip install uv==0.12.0
-          uvx --from reuse==6.2.0 reuse lint
+        run: go run ./cmd/devtool reuse
+
+      - name: Verify release source
+        run: go run ./cmd/devtool release-source
 
       - name: GoReleaser configuration
-        run: goreleaser check
+        run: go run ./cmd/devtool release-check
+
+  release-smoke:
+    name: Release snapshot smoke test
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 1.26.5
+          cache: true
+
+      - name: Install pinned release tools
+        run: go run ./cmd/devtool tools release
+
+      - name: Build and verify release snapshot
+        run: go run ./cmd/devtool release-smoke

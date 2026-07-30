@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 startclean contributors <https://github.com/P4suta/startclean/graphs/contributors>
 # SPDX-License-Identifier: MIT OR Apache-2.0
 
-set shell := ["pwsh", "-NoLogo", "-NoProfile", "-Command"]
+set windows-shell := ["pwsh", "-NoLogo", "-NoProfile", "-Command"]
 
 default:
     @just --list
@@ -11,48 +11,64 @@ setup:
     lefthook install
 
 format:
-    gofmt -w .
-    taplo format
+    go run ./cmd/devtool format
 
 format-check:
-    $files = @(gofmt -l .); if ($files.Count -ne 0) { $files; throw "gofmt changes required" }
-    taplo format --check
+    go run ./cmd/devtool format --check
 
 generate:
-    go generate ./...
+    go run ./cmd/devtool generate
 
 generated-check:
-    go generate ./...
-    git diff --exit-code
+    go run ./cmd/devtool generate --check
 
 lint:
-    golangci-lint run ./...
-    actionlint
-    typos
+    go run ./cmd/devtool lint
+
+vet:
+    go run ./cmd/devtool vet
 
 test:
-    go test ./...
+    go run ./cmd/devtool test
 
 integration:
-    go test -tags=integration ./internal/platform
+    go run ./cmd/devtool integration
+
+stress:
+    go run ./cmd/devtool stress
 
 coverage:
-    go test -covermode atomic -coverprofile coverage.out ./...
-    go tool cover -func=coverage.out
+    go run ./cmd/devtool coverage
+
+module-verify:
+    go run ./cmd/devtool module-verify
+
+race:
+    go run ./cmd/devtool race
+
+fuzz:
+    go run ./cmd/devtool fuzz
 
 security:
-    govulncheck ./...
-    gitleaks dir .
+    go run ./cmd/devtool security
+
+secrets:
+    go run ./cmd/devtool secrets
 
 reuse:
-    reuse lint
+    go run ./cmd/devtool reuse
 
 build:
-    $env:CGO_ENABLED = "0"; go build -trimpath ./cmd/startclean
-    $env:CGO_ENABLED = "0"; $env:GOARCH = "arm64"; go build -trimpath ./cmd/startclean
+    go run ./cmd/devtool build
+
+release-source:
+    go run ./cmd/devtool release-source
 
 release-check:
-    goreleaser check
-    goreleaser release --snapshot --clean
+    go run ./cmd/devtool release-check
 
-ci: format-check generated-check lint test integration coverage security reuse build release-check
+release-smoke:
+    go run ./cmd/devtool release-smoke
+
+ci:
+    go run ./cmd/devtool ci

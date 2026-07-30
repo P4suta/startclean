@@ -15,6 +15,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/mattn/go-runewidth"
 )
 
 type Config struct {
@@ -139,6 +140,12 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter", "q", "esc", "ctrl+c":
 			return m, tea.Quit
 		}
+		return m, nil
+	}
+	// Once permanent deletion has started, the cleanup command must be allowed
+	// to report its exact result. Quitting here would not cancel the goroutine
+	// and could falsely tell the user that nothing was deleted.
+	if m.state == stateCleaning {
 		return m, nil
 	}
 	if key.String() == "ctrl+c" || key.String() == "q" || key.String() == "esc" {
@@ -491,14 +498,16 @@ func (m Model) warning(value string) string {
 }
 
 func truncate(value string, width int) string {
-	runes := []rune(value)
-	if len(runes) <= width {
+	if width <= 0 {
+		return ""
+	}
+	if runewidth.StringWidth(value) <= width {
 		return value
 	}
-	if width <= 1 {
+	if width <= runewidth.StringWidth("…") {
 		return "…"
 	}
-	return string(runes[:width-1]) + "…"
+	return runewidth.Truncate(value, width, "…")
 }
 
 func wrap(value string, width int) string {
@@ -506,14 +515,7 @@ func wrap(value string, width int) string {
 		return "-"
 	}
 	width = max(width, 1)
-	runes := []rune(value)
-	var lines []string
-	for len(runes) > width {
-		lines = append(lines, string(runes[:width]))
-		runes = runes[width:]
-	}
-	lines = append(lines, string(runes))
-	return strings.Join(lines, "\n")
+	return runewidth.Wrap(value, width)
 }
 
 func Run(ctx context.Context, input io.Reader, output io.Writer, config Config) (RunResult, error) {

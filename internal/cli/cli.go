@@ -58,7 +58,22 @@ type app struct {
 	out       io.Writer
 	errOut    io.Writer
 	colorMode string
-	system    *platform.System
+	system    systemAdapter
+}
+
+// systemAdapter keeps command policy independent from the Windows API layer.
+// Tests use the same command tree with temporary roots and an in-memory link
+// reader, so every documented exit code can be exercised without touching the
+// real Start Menu.
+type systemAdapter interface {
+	core.LinkReader
+	core.ShellNotifier
+	core.GuardedRemover
+	Supported() bool
+	Roots() (core.Roots, error)
+	Elevated() bool
+	ExpandEnvironment(string) (string, error)
+	DriveKind(string) (core.DriveKind, error)
 }
 
 type services struct {
@@ -69,7 +84,11 @@ type services struct {
 }
 
 func Execute(args []string, in io.Reader, out, errOut io.Writer) (int, error) {
-	application := &app{in: in, out: out, errOut: errOut, colorMode: "auto", system: platform.New()}
+	return executeWithSystem(args, in, out, errOut, platform.New())
+}
+
+func executeWithSystem(args []string, in io.Reader, out, errOut io.Writer, system systemAdapter) (int, error) {
+	application := &app{in: in, out: out, errOut: errOut, colorMode: "auto", system: system}
 	command := application.rootCommand()
 	command.SetArgs(args)
 	command.SetIn(in)
@@ -152,7 +171,7 @@ func (a *app) loadServices() (services, error) {
 		},
 		cleaner: core.Cleaner{
 			Roots: roots, Reader: a.system, Classifier: classifier, FS: core.OSFS{},
-			Elevated: elevated, Notifier: a.system,
+			Remover: a.system, Elevated: elevated, Notifier: a.system,
 		},
 	}, nil
 }
@@ -236,7 +255,7 @@ func (a *app) cleanCommand() *cobra.Command {
 			}
 			if !svc.elevated && containsCommon(selected) {
 				_, _ = fmt.Fprintln(a.errOut, "All-users shortcuts require elevation. Run:")
-				_, _ = fmt.Fprintln(a.errOut, elevationCommand())
+				_, _ = fmt.Fprintln(a.errOut, automationElevationCommand())
 				return withCode(ExitElevationRequired, core.ErrElevationRequired)
 			}
 			cleaned, cleanErr := svc.cleaner.Clean(selected)
@@ -269,7 +288,7 @@ func (a *app) runInteractive(ctx context.Context) error {
 		},
 		Clean:        svc.cleaner.Clean,
 		Elevated:     svc.elevated,
-		ElevateHint:  elevationCommand(),
+		ElevateHint:  interactiveElevationCommand(),
 		ColorEnabled: a.colorEnabled(),
 	})
 	if err != nil {
@@ -332,14 +351,27 @@ func containsCommon(items []core.Item) bool {
 	return false
 }
 
-func elevationCommand() string {
+func interactiveElevationCommand() string {
+	return elevationCommand("clean")
+}
+
+func automationElevationCommand() string {
+	return elevationCommand("clean", "--all", "--yes")
+}
+
+func elevationCommand(arguments ...string) string {
 	executable, err := os.Executable()
 	if err != nil {
 		executable = "startclean.exe"
 	}
 	executable, _ = filepath.Abs(executable)
 	executable = platform.EscapePowerShellSingleQuoted(executable)
-	return "Start-Process -FilePath '" + executable + "' -ArgumentList 'clean','--all','--yes' -Verb RunAs"
+	quotedArguments := make([]string, len(arguments))
+	for index, argument := range arguments {
+		quotedArguments[index] = "'" + platform.EscapePowerShellSingleQuoted(argument) + "'"
+	}
+	return "Start-Process -FilePath '" + executable + "' -ArgumentList " +
+		strings.Join(quotedArguments, ",") + " -Verb RunAs"
 }
 
 func (a *app) colorEnabled() bool {
