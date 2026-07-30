@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: 2026 startclean contributors <https://github.com/P4suta/startclean/graphs/contributors>
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+version: 2
+project_name: startclean
+
+before:
+  hooks:
+    - go mod tidy
+    - go generate ./...
+
+builds:
+  - id: startclean
+    main: ./cmd/startclean
+    binary: startclean
+    goos: [windows]
+    goarch: [amd64, arm64]
+    env: [CGO_ENABLED=0]
+    flags: [-trimpath]
+    ldflags:
+      - >-
+        -s -w
+        -X github.com/P4suta/startclean/internal/buildinfo.Version={{.Version}}
+        -X github.com/P4suta/startclean/internal/buildinfo.Commit={{.Commit}}
+        -X github.com/P4suta/startclean/internal/buildinfo.Date={{.Date}}
+
+archives:
+  - id: windows
+    ids: [startclean]
+    formats: [zip]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_Windows_
+      {{- if eq .Arch "amd64" }}x86_64{{ else }}{{ .Arch }}{{ end }}
+    files:
+      - README.md
+      - LICENSES/*
+      - completions/*
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+sboms:
+  - artifacts: archive
+    documents:
+      - "{{ .ArtifactName }}.spdx.json"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+release:
+  prerelease: auto

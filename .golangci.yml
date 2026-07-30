@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2026 startclean contributors <https://github.com/P4suta/startclean/graphs/contributors>
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - errorlint
+    - exhaustive
+    - gocritic
+    - gosec
+    - misspell
+    - nilerr
+    - nilnil
+    - nolintlint
+    - prealloc
+    - staticcheck
+    - testifylint
+    - unconvert
+    - unparam
+    - wastedassign
+  exclusions:
+    rules:
+      - path: internal/platform/system_windows.go
+        linters: [gosec]
+      - path: cmd/gencompletion/main.go
+        linters: [gosec]
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

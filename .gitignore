@@ -1,0 +1,5 @@
+startclean.exe
+coverage.out
+dist/
+.idea/
+.vscode/
