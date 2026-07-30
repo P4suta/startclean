@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -352,6 +353,56 @@ func TestRaceUsesCGOAndNonCachedShuffledTests(t *testing.T) {
 	}}
 	if !reflect.DeepEqual(calls, want) {
 		t.Fatalf("race commands = %#v, want %#v", calls, want)
+	}
+}
+
+func TestRaceFindsPreinstalledWindowsCompilerDeterministically(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows compiler discovery is Windows-specific")
+	}
+
+	var calls []invocation
+	app := testApplication(t, func(
+		_ string,
+		command invocation,
+		_ io.Reader,
+		_ io.Writer,
+		_ io.Writer,
+	) error {
+		calls = append(calls, command)
+		return nil
+	})
+	fixture := filepath.Join(t.TempDir(), "gcc.exe")
+	writeTestFile(t, fixture, []byte("test compiler fixture"))
+	fixtureInfo, err := os.Stat(fixture)
+	if err != nil {
+		t.Fatalf("stat compiler fixture: %v", err)
+	}
+	app.stat = func(path string) (os.FileInfo, error) {
+		if path == windowsRaceCompilerCandidates[0] {
+			return fixtureInfo, nil
+		}
+		return nil, os.ErrNotExist
+	}
+	app.getenv = func(name string) string {
+		if name == "PATH" {
+			return `C:\existing`
+		}
+		return ""
+	}
+
+	if err := app.run([]string{"race"}); err != nil {
+		t.Fatalf("run race: %v", err)
+	}
+	if len(calls) != 1 {
+		t.Fatalf("race command count = %d, want 1", len(calls))
+	}
+	if got := environmentValue(calls[0].env, "CC"); got != windowsRaceCompilerCandidates[0] {
+		t.Fatalf("CC = %q, want %q", got, windowsRaceCompilerCandidates[0])
+	}
+	wantPath := filepath.Dir(windowsRaceCompilerCandidates[0]) + string(os.PathListSeparator) + `C:\existing`
+	if got := environmentValue(calls[0].env, "PATH"); got != wantPath {
+		t.Fatalf("PATH = %q, want %q", got, wantPath)
 	}
 }
 
@@ -1535,6 +1586,9 @@ func testApplication(t *testing.T, executor commandExecutor) *application {
 		execute: executor,
 		lookPath: func(string) (string, error) {
 			return "", errors.New("not found")
+		},
+		stat: func(string) (os.FileInfo, error) {
+			return nil, os.ErrNotExist
 		},
 		getenv: func(string) string { return "" },
 	}

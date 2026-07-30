@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 	"unsafe"
 
@@ -33,7 +32,7 @@ func TestReadsRealTemporaryShellLinkWithoutResolving(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Target() error = %v", err)
 	}
-	if !strings.EqualFold(filepath.Clean(got), filepath.Clean(target)) {
+	if !sameTemporaryTestPath(got, target) {
 		t.Fatalf("Target() = %q, want %q", got, target)
 	}
 }
@@ -65,7 +64,7 @@ func TestRealShellLinkEndToEndScanClassifyAndGuardedDelete(t *testing.T) {
 		t.Fatalf("real Shell Link scan result = %+v", result)
 	}
 	if result.Items[0].ReasonCode != core.ReasonTargetMissing ||
-		!strings.EqualFold(filepath.Clean(result.Items[0].TargetPath), filepath.Clean(target)) {
+		!sameTemporaryTestPath(result.Items[0].TargetPath, target) {
 		t.Fatalf("real Shell Link classification = %+v", result.Items[0])
 	}
 

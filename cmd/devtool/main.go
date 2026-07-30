@@ -25,6 +25,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -76,6 +77,12 @@ var releaseArchiveSuffixes = []string{
 var releaseArchiveMachines = map[string]uint16{
 	"_Windows_x86_64.zip": pe.IMAGE_FILE_MACHINE_AMD64,
 	"_Windows_arm64.zip":  pe.IMAGE_FILE_MACHINE_ARM64,
+}
+
+var windowsRaceCompilerCandidates = []string{
+	`C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin\gcc.exe`,
+	`C:\mingw64\bin\gcc.exe`,
+	`C:\msys64\mingw64\bin\gcc.exe`,
 }
 
 var ciSteps = [][]string{
@@ -135,6 +142,7 @@ type application struct {
 	stderr   io.Writer
 	execute  commandExecutor
 	lookPath func(string) (string, error)
+	stat     func(string) (fs.FileInfo, error)
 	getenv   func(string) string
 	http     *http.Client
 }
@@ -166,6 +174,7 @@ func main() {
 		stderr:   os.Stderr,
 		execute:  executeCommand,
 		lookPath: exec.LookPath,
+		stat:     os.Stat,
 		getenv:   os.Getenv,
 		http:     &http.Client{Timeout: 30 * time.Second},
 	}
@@ -429,6 +438,26 @@ func (a *application) runPRTitle() error {
 }
 
 func (a *application) runRace() error {
+	environment := []environmentSetting{{name: "CGO_ENABLED", value: "1"}}
+	if runtime.GOOS == "windows" && a.lookPath != nil && a.stat != nil {
+		if _, err := a.lookPath("gcc"); err != nil {
+			for _, compiler := range windowsRaceCompilerCandidates {
+				info, statErr := a.stat(compiler)
+				if statErr != nil || !info.Mode().IsRegular() {
+					continue
+				}
+				_, _ = fmt.Fprintf(a.stdout, "+ use Windows race compiler %s\n", compiler)
+				environment = append(environment,
+					environmentSetting{name: "CC", value: compiler},
+					environmentSetting{
+						name:  "PATH",
+						value: filepath.Dir(compiler) + string(os.PathListSeparator) + a.environment("PATH"),
+					},
+				)
+				break
+			}
+		}
+	}
 	return a.runExternal(invocation{
 		name: "go",
 		args: []string{
@@ -439,7 +468,7 @@ func (a *application) runRace() error {
 			"-count=1",
 			"./...",
 		},
-		env: []environmentSetting{{name: "CGO_ENABLED", value: "1"}},
+		env: environment,
 	})
 }
 

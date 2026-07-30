@@ -123,7 +123,7 @@ func TestSystemDeleteValidatedAllowsShellLinkReloadWhileHandleIsPinned(t *testin
 	if err != nil {
 		t.Fatalf("DeleteValidated() error = %v", err)
 	}
-	if !strings.EqualFold(filepath.Clean(reloadedTarget), filepath.Clean(target)) {
+	if !sameTemporaryTestPath(reloadedTarget, target) {
 		t.Fatalf("Target() = %q, want %q", reloadedTarget, target)
 	}
 	assertPathMissing(t, path)
@@ -524,6 +524,20 @@ func makeSymlinkOrSkip(t *testing.T, target, path string) {
 	if err := os.Symlink(target, path); err != nil {
 		t.Skipf("creating a symlink requires Developer Mode or elevation: %v", err)
 	}
+}
+
+func sameTemporaryTestPath(first, second string) bool {
+	firstInfo, firstErr := os.Stat(first)
+	secondInfo, secondErr := os.Stat(second)
+	if firstErr == nil && secondErr == nil {
+		return os.SameFile(firstInfo, secondInfo)
+	}
+	if !strings.EqualFold(filepath.Base(first), filepath.Base(second)) {
+		return false
+	}
+	firstParent, firstParentErr := os.Stat(filepath.Dir(first))
+	secondParent, secondParentErr := os.Stat(filepath.Dir(second))
+	return firstParentErr == nil && secondParentErr == nil && os.SameFile(firstParent, secondParent)
 }
 
 //nolint:gosec // Test-only COM ABI calls intentionally mirror the audited production wrapper.
