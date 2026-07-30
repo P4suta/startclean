@@ -54,7 +54,15 @@ jobs:
       - name: Stress Windows deletion safety and COM integration
         run: go run ./cmd/devtool stress
 
+      - name: Restore pinned coverage tool
+        id: coverage-tools-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/go/bin
+          key: coverage-go-${{ runner.os }}-${{ hashFiles('mise.toml') }}
+
       - name: Install pinned coverage tool
+        if: steps.coverage-tools-cache.outputs.cache-hit != 'true'
         run: go run ./cmd/devtool tools coverage
 
       - name: Coverage
@@ -142,7 +150,15 @@ jobs:
           STARTCLEAN_PR_TITLE: ${{ github.event.pull_request.title }}
         run: go run ./cmd/devtool pr-title
 
+      - name: Restore pinned Go policy tools
+        id: policy-go-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/go/bin
+          key: policy-go-${{ runner.os }}-${{ hashFiles('mise.toml') }}
+
       - name: Restore pinned Rust policy tools
+        id: policy-rust-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
@@ -154,8 +170,16 @@ jobs:
             ~/.cargo/registry/index
           key: policy-cargo-${{ runner.os }}-${{ hashFiles('mise.toml') }}
 
-      - name: Install pinned policy tools
-        run: go run ./cmd/devtool tools policy
+      - name: Install pinned Go policy tools
+        if: steps.policy-go-cache.outputs.cache-hit != 'true'
+        run: go run ./cmd/devtool tools policy-go
+
+      - name: Install pinned Rust policy tools
+        if: steps.policy-rust-cache.outputs.cache-hit != 'true'
+        run: go run ./cmd/devtool tools policy-rust
+
+      - name: Install pinned Python policy tools
+        run: go run ./cmd/devtool tools policy-python
 
       - name: Lint source, workflows, and prose
         run: go run ./cmd/devtool lint
@@ -189,7 +213,15 @@ jobs:
           go-version: 1.26.5
           cache: true
 
+      - name: Restore pinned release tools
+        id: release-tools-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/go/bin
+          key: release-go-${{ runner.os }}-${{ hashFiles('mise.toml') }}
+
       - name: Install pinned release tools
+        if: steps.release-tools-cache.outputs.cache-hit != 'true'
         run: go run ./cmd/devtool tools release
 
       - name: Build and verify release snapshot
