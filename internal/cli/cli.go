@@ -259,14 +259,14 @@ func (a *app) cleanCommand() *cobra.Command {
 				return withCode(ExitElevationRequired, core.ErrElevationRequired)
 			}
 			cleaned, cleanErr := svc.cleaner.Clean(selected)
-			_ = writeCleanSummary(a.out, cleaned)
+			summaryErr := writeCleanSummary(a.out, cleaned)
 			if cleanErr != nil {
 				if errors.Is(cleanErr, core.ErrElevationRequired) {
 					return withCode(ExitElevationRequired, cleanErr)
 				}
 				return cleanErr
 			}
-			return nil
+			return summaryErr
 		},
 	}
 	command.Flags().BoolVar(&all, "all", false, "select every eligible stale shortcut")

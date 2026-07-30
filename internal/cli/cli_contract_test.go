@@ -101,6 +101,28 @@ func TestNonInteractiveCleanRequiresBothExplicitFlagsBeforeScanning(t *testing.T
 	}
 }
 
+func TestNonInteractiveCleanRefusesPartialScanWithoutMutation(t *testing.T) {
+	t.Parallel()
+	system := newFakeSystem(t)
+	system.elevated = true
+	staleLink := writeFakeLink(t, system.roots.User, "Stale.lnk")
+	unreadableLink := writeFakeLink(t, system.roots.User, "Unreadable.lnk")
+	system.targets[staleLink] = filepath.Join(system.roots.User, "missing.exe")
+
+	code, _, _, err := executeForTest([]string{"clean", "--all", "--yes"}, system)
+	if err == nil || code != ExitOperational || !strings.Contains(err.Error(), "refusing cleanup because the scan had 1 error(s)") {
+		t.Fatalf("partial-scan clean exit = (%d, %v), want (%d, scan error)", code, err, ExitOperational)
+	}
+	if len(system.deleted) != 0 {
+		t.Fatalf("partial-scan clean notified %d deletion(s): %v", len(system.deleted), system.deleted)
+	}
+	for _, path := range []string{staleLink, unreadableLink} {
+		if _, statErr := os.Stat(path); statErr != nil {
+			t.Fatalf("partial-scan clean mutated %s: %v", path, statErr)
+		}
+	}
+}
+
 func TestInteractiveInvocationRefusesNonTTYWithoutScanning(t *testing.T) {
 	t.Parallel()
 	system := newFakeSystem(t)
@@ -162,6 +184,64 @@ func TestExplicitCleanDeletesOnlyTemporaryEligibleLink(t *testing.T) {
 	if !strings.Contains(stdout, "Deleted 1 of 1") || len(system.deleted) != 1 {
 		t.Fatalf("cleanup result/notification mismatch: output=%q deleted=%v", stdout, system.deleted)
 	}
+}
+
+func TestNonInteractiveCleanPropagatesSummaryWriteFailureWithoutMaskingCleanFailure(t *testing.T) {
+	t.Parallel()
+
+	t.Run("successful cleanup", func(t *testing.T) {
+		t.Parallel()
+		system := newFakeSystem(t)
+		system.elevated = true
+		link := writeFakeLink(t, system.roots.User, "Stale.lnk")
+		system.targets[link] = filepath.Join(system.roots.User, "missing.exe")
+		writeFailure := errors.New("stdout is unavailable")
+
+		code, err := executeWithSystem(
+			[]string{"clean", "--all", "--yes"},
+			strings.NewReader(""),
+			failingWriter{err: writeFailure},
+			&bytes.Buffer{},
+			system,
+		)
+		if !errors.Is(err, writeFailure) || code != ExitOperational {
+			t.Fatalf("summary write failure exit = (%d, %v), want (%d, write failure)", code, err, ExitOperational)
+		}
+		if _, statErr := os.Stat(link); !errors.Is(statErr, fs.ErrNotExist) {
+			t.Fatalf("successful cleanup did not delete its link: %v", statErr)
+		}
+		if len(system.deleted) != 1 {
+			t.Fatalf("successful cleanup notified %d deletion(s), want 1", len(system.deleted))
+		}
+	})
+
+	t.Run("cleanup failure takes precedence", func(t *testing.T) {
+		t.Parallel()
+		system := newFakeSystem(t)
+		system.elevated = true
+		link := writeFakeLink(t, system.roots.User, "Stale.lnk")
+		system.targets[link] = filepath.Join(system.roots.User, "missing.exe")
+		system.deleteErr = errors.New("guarded deletion failed")
+		writeFailure := errors.New("stdout is unavailable")
+
+		code, err := executeWithSystem(
+			[]string{"clean", "--all", "--yes"},
+			strings.NewReader(""),
+			failingWriter{err: writeFailure},
+			&bytes.Buffer{},
+			system,
+		)
+		if err == nil || code != ExitOperational || errors.Is(err, writeFailure) ||
+			!strings.Contains(err.Error(), "cleanup completed with operational errors") {
+			t.Fatalf("cleanup/write failure exit = (%d, %v), want cleanup error precedence", code, err)
+		}
+		if _, statErr := os.Stat(link); statErr != nil {
+			t.Fatalf("failed cleanup mutated its link: %v", statErr)
+		}
+		if len(system.deleted) != 0 {
+			t.Fatalf("failed cleanup notified %d deletion(s): %v", len(system.deleted), system.deleted)
+		}
+	})
 }
 
 func TestDoctorReportsHealthyTemporaryFoldersAsVersionedJSON(t *testing.T) {
@@ -239,6 +319,7 @@ type fakeSystem struct {
 	elevated    bool
 	rootsErr    error
 	rootsCalls  int
+	deleteErr   error
 	deleted     []string
 	directories []string
 }
@@ -281,6 +362,9 @@ func (s *fakeSystem) DeleteValidated(_ string, path string, validate func() erro
 	if err := validate(); err != nil {
 		return err
 	}
+	if s.deleteErr != nil {
+		return s.deleteErr
+	}
 	return os.Remove(path)
 }
 func (s *fakeSystem) RemoveEmptyDirectory(_ string, path string) (bool, error) {
@@ -311,3 +395,7 @@ func executeForTest(args []string, system systemAdapter) (int, string, string, e
 	code, err := executeWithSystem(args, strings.NewReader(""), &stdout, &stderr, system)
 	return code, stdout.String(), stderr.String(), err
 }
+
+type failingWriter struct{ err error }
+
+func (w failingWriter) Write([]byte) (int, error) { return 0, w.err }
