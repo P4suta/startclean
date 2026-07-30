@@ -1041,14 +1041,21 @@ func (a *application) runCommitMessage(args []string) error {
 
 func (a *application) runTools(args []string) error {
 	if len(args) == 0 || isSingleHelpArgument(args) {
-		_, _ = fmt.Fprintln(a.stdout, "Usage: devtool tools coverage|policy|release")
+		_, _ = fmt.Fprintln(
+			a.stdout,
+			"Usage: devtool tools coverage|policy|policy-go|policy-rust|policy-python|release",
+		)
 		if len(args) == 0 {
-			return &usageError{message: "tools requires coverage, policy, or release"}
+			return &usageError{
+				message: "tools requires coverage, policy, policy-go, policy-rust, policy-python, or release",
+			}
 		}
 		return nil
 	}
 	if len(args) != 1 {
-		return &usageError{message: "tools accepts exactly one of coverage, policy, or release"}
+		return &usageError{
+			message: "tools accepts exactly one of coverage, policy, policy-go, policy-rust, policy-python, or release",
+		}
 	}
 
 	switch args[0] {
@@ -1056,6 +1063,12 @@ func (a *application) runTools(args []string) error {
 		return a.installCoverageTools()
 	case "policy":
 		return a.installPolicyTools()
+	case "policy-go":
+		return a.installPolicyGoTools()
+	case "policy-rust":
+		return a.installPolicyRustTools()
+	case "policy-python":
+		return a.installPolicyPythonTools()
 	case "release":
 		return a.installReleaseTools()
 	default:
@@ -1064,13 +1077,28 @@ func (a *application) runTools(args []string) error {
 }
 
 func (a *application) installPolicyTools() error {
-	commands := []invocation{
+	if err := a.installPolicyGoTools(); err != nil {
+		return err
+	}
+	if err := a.installPolicyRustTools(); err != nil {
+		return err
+	}
+	return a.installPolicyPythonTools()
+}
+
+func (a *application) installPolicyGoTools() error {
+	return a.runExternalSequence([]invocation{
 		{name: "go", args: []string{"install", golangciLintInstall}},
 		{name: "go", args: []string{"install", govulncheckInstall}},
 		{name: "go", args: []string{"install", actionlintInstall}},
 		{name: "go", args: []string{"install", goreleaserInstall}},
 		{name: "go", args: []string{"install", gitleaksInstall}},
 		{name: "go", args: []string{"install", osvScannerInstall}},
+	})
+}
+
+func (a *application) installPolicyRustTools() error {
+	return a.runExternalSequence([]invocation{
 		{
 			name: "cargo",
 			args: []string{
@@ -1091,9 +1119,14 @@ func (a *application) installPolicyTools() error {
 				"--locked",
 			},
 		},
-		{name: "python", args: []string{"-m", "pip", "install", uvInstall}},
-	}
-	return a.runExternalSequence(commands)
+	})
+}
+
+func (a *application) installPolicyPythonTools() error {
+	return a.runExternal(invocation{
+		name: "python",
+		args: []string{"-m", "pip", "install", uvInstall},
+	})
 }
 
 func (a *application) installCoverageTools() error {
@@ -1196,6 +1229,9 @@ Commands:
   commit-msg <path>   Validate a Conventional Commit message file
   tools coverage      Install the pinned coverage threshold tool
   tools policy        Install pinned policy and CI tools
+  tools policy-go     Install pinned Go policy and CI tools
+  tools policy-rust   Install pinned Rust policy and CI tools
+  tools policy-python Install the pinned Python policy bootstrap tool
   tools release       Install pinned release tools
   ci                  Run the standard local quality gate`)
 }

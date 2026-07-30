@@ -8,15 +8,17 @@ on:
     tags: ["v*"]
 
 permissions:
-  artifact-metadata: write
-  contents: write
-  id-token: write
-  attestations: write
+  contents: read
 
 jobs:
   release:
     runs-on: windows-2025
     timeout-minutes: 30
+    permissions:
+      artifact-metadata: write
+      attestations: write
+      contents: write
+      id-token: write
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -33,7 +35,15 @@ jobs:
       - name: Verify release tag is from main
         run: go run ./cmd/devtool release-preflight
 
+      - name: Restore pinned release tools
+        id: release-tools-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/go/bin
+          key: release-go-${{ runner.os }}-${{ hashFiles('mise.toml') }}
+
       - name: Install pinned release tools
+        if: steps.release-tools-cache.outputs.cache-hit != 'true'
         run: go run ./cmd/devtool tools release
 
       - name: Test release source
