@@ -1282,6 +1282,152 @@ func TestPolicyToolsAreExactPinnedInstalls(t *testing.T) {
 	}
 }
 
+func TestPolicyToolSubsetsAreExactPinnedInstalls(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		set  string
+		want []invocation
+	}{
+		{
+			name: "Go",
+			set:  "policy-go",
+			want: []invocation{
+				{name: "go", args: []string{"install", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2"}},
+				{name: "go", args: []string{"install", "golang.org/x/vuln/cmd/govulncheck@v1.6.0"}},
+				{name: "go", args: []string{"install", "github.com/rhysd/actionlint/cmd/actionlint@v1.7.12"}},
+				{name: "go", args: []string{"install", "github.com/goreleaser/goreleaser/v2@v2.17.1"}},
+				{name: "go", args: []string{"install", "github.com/zricethezav/gitleaks/v8@v8.30.1"}},
+				{name: "go", args: []string{"install", "github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.3.8"}},
+			},
+		},
+		{
+			name: "Rust",
+			set:  "policy-rust",
+			want: []invocation{
+				{
+					name: "cargo",
+					args: []string{"install", "typos-cli", "--version", "1.48.0", "--locked"},
+				},
+				{
+					name: "cargo",
+					args: []string{"install", "taplo-cli", "--version", "0.10.0", "--locked"},
+				},
+			},
+		},
+		{
+			name: "Python",
+			set:  "policy-python",
+			want: []invocation{
+				{name: "python", args: []string{"-m", "pip", "install", "uv==0.12.0"}},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			var calls []invocation
+			app := testApplication(t, func(
+				_ string,
+				command invocation,
+				_ io.Reader,
+				_ io.Writer,
+				_ io.Writer,
+			) error {
+				calls = append(calls, command)
+				return nil
+			})
+
+			if err := app.run([]string{"tools", test.set}); err != nil {
+				t.Fatalf("install %s tools: %v", test.set, err)
+			}
+			if !reflect.DeepEqual(calls, test.want) {
+				t.Fatalf("%s install commands = %#v, want %#v", test.set, calls, test.want)
+			}
+		})
+	}
+}
+
+func TestToolsUsageListsPolicySubsets(t *testing.T) {
+	t.Parallel()
+
+	const (
+		usage    = "Usage: devtool tools coverage|policy|policy-go|policy-rust|policy-python|release\n"
+		requires = "tools requires coverage, policy, policy-go, policy-rust, " +
+			"policy-python, or release"
+		accepts = "tools accepts exactly one of coverage, policy, policy-go, " +
+			"policy-rust, policy-python, or release"
+	)
+
+	t.Run("help", func(t *testing.T) {
+		t.Parallel()
+
+		var output strings.Builder
+		app := testApplication(t, nil)
+		app.stdout = &output
+		if err := app.run([]string{"tools", "--help"}); err != nil {
+			t.Fatalf("tools help: %v", err)
+		}
+		if got := output.String(); got != usage {
+			t.Fatalf("tools help = %q, want %q", got, usage)
+		}
+	})
+
+	t.Run("missing set", func(t *testing.T) {
+		t.Parallel()
+
+		var output strings.Builder
+		app := testApplication(t, nil)
+		app.stdout = &output
+		err := app.run([]string{"tools"})
+		if got := errorExitCode(err); got != 2 {
+			t.Fatalf("exit code = %d, want 2 (error: %v)", got, err)
+		}
+		if err == nil || err.Error() != requires {
+			t.Fatalf("tools missing-set error = %v, want %q", err, requires)
+		}
+		if got := output.String(); got != usage {
+			t.Fatalf("tools missing-set help = %q, want %q", got, usage)
+		}
+	})
+
+	t.Run("multiple sets", func(t *testing.T) {
+		t.Parallel()
+
+		app := testApplication(t, nil)
+		err := app.run([]string{"tools", "policy-go", "policy-rust"})
+		if got := errorExitCode(err); got != 2 {
+			t.Fatalf("exit code = %d, want 2 (error: %v)", got, err)
+		}
+		if err == nil || err.Error() != accepts {
+			t.Fatalf("tools multiple-set error = %v, want %q", err, accepts)
+		}
+	})
+
+	t.Run("top-level help", func(t *testing.T) {
+		t.Parallel()
+
+		var output strings.Builder
+		app := testApplication(t, nil)
+		app.stdout = &output
+		if err := app.run([]string{"help"}); err != nil {
+			t.Fatalf("top-level help: %v", err)
+		}
+		for _, line := range []string{
+			"tools policy-go     Install pinned Go policy and CI tools",
+			"tools policy-rust   Install pinned Rust policy and CI tools",
+			"tools policy-python Install the pinned Python policy bootstrap tool",
+		} {
+			if !strings.Contains(output.String(), line) {
+				t.Errorf("top-level help does not contain %q", line)
+			}
+		}
+	})
+}
+
 func TestCoverageAndReleaseToolsAreExactPinnedInstalls(t *testing.T) {
 	t.Parallel()
 
