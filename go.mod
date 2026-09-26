@@ -3,7 +3,7 @@
 
 module github.com/P4suta/startclean
 
-go 1.26.5
+go 1.26.6
 
 require (
 	github.com/charmbracelet/bubbles v0.21.1
