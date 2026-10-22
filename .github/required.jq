@@ -9,8 +9,6 @@ def required($full):
     all(IN("true", "false"))) and
   ([
     {name: "windows", selected: ($full or $needs.changes.outputs.runtime == "true")},
-    {name: "race", selected: ($full or $needs.changes.outputs.runtime == "true")},
-    {name: "policy", selected: ($full or $needs.changes.outputs.runtime == "true")},
     {name: "release-check", selected: ($full or $needs.changes.outputs.release == "true")}
   ] | all(.[]; . as $job |
     $needs[$job.name].result == (if $job.selected then "success" else "skipped" end)));

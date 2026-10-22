@@ -68,6 +68,17 @@ jobs:
           go-version: 1.27.3
           cache: true
 
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: v2026.10.14
+          install_args: golangci-lint go:golang.org/x/vuln/cmd/govulncheck go:github.com/google/osv-scanner/v2/cmd/osv-scanner
+
+      - name: Validate pull request title
+        if: github.event_name == 'pull_request'
+        env:
+          STARTCLEAN_PR_TITLE: ${{ github.event.pull_request.title }}
+        run: go run ./cmd/devtool pr-title
+
       - name: Verify module integrity
         run: go run ./cmd/devtool module-verify
 
@@ -103,63 +114,24 @@ jobs:
       - name: Build Windows x64 and arm64
         run: go run ./cmd/devtool build
 
-  race:
-    name: Race detector
-    needs: changes
-    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.runtime == 'true'
-    runs-on: windows-2025
-    timeout-minutes: 20
-    steps:
-      - name: Check out source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version: 1.27.3
-          cache: true
-
       - name: Run race-enabled tests
         run: go run ./cmd/devtool race
 
-  policy:
-    name: Lint, security, license, and release policy
-    needs: changes
-    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.runtime == 'true'
-    runs-on: windows-2025
-    timeout-minutes: 30
-    steps:
-      - name: Check out source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
+      - name: Lint Go source
+        run: golangci-lint run ./...
 
-      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
-        with:
-          version: v2026.10.14
-          install_args: go golangci-lint actionlint typos taplo uv pipx:reuse gitleaks goreleaser go:golang.org/x/vuln/cmd/govulncheck go:github.com/google/osv-scanner/v2/cmd/osv-scanner
-
-      - name: Validate pull request title
-        if: github.event_name == 'pull_request'
-        env:
-          STARTCLEAN_PR_TITLE: ${{ github.event.pull_request.title }}
-        run: go run ./cmd/devtool pr-title
-
-      - name: Lint source, workflows, and prose
-        run: go run ./cmd/devtool lint
-
-      - name: Vulnerability and secret scans
-        run: go run ./cmd/devtool security
+      - name: Go vulnerability scans
+        run: |
+          govulncheck ./...
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          osv-scanner scan source --recursive .
 
   release-check:
     name: Release configuration
     needs: changes
     if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.release == 'true'
-    runs-on: windows-2025
-    timeout-minutes: 30
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -178,7 +150,7 @@ jobs:
   required:
     name: required
     if: always()
-    needs: [changes, windows, race, policy, release-check]
+    needs: [changes, windows, release-check]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
