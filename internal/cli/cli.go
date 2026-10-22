@@ -98,8 +98,7 @@ func executeWithSystem(args []string, in io.Reader, out, errOut io.Writer, syste
 	if err == nil {
 		return ExitSuccess, nil
 	}
-	var coded codedError
-	if errors.As(err, &coded) {
+	if coded, ok := errors.AsType[codedError](err); ok {
 		return coded.code, coded.err
 	}
 	if isUsageError(err) {

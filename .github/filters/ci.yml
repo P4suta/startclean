@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2026 startclean contributors <https://github.com/P4suta/startclean/graphs/contributors>
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+runtime:
+  - '**/*.go'
+  - 'go.mod'
+  - 'go.sum'
+  - 'mise.toml'
+  - 'mise.lock'
+  - '.golangci*'
+  - '.github/workflows/ci.yml'
+  - '.github/filters/**'
+  - '.github/*.jq'
+release:
+  - '.goreleaser.yml'
+  - 'cmd/devtool/**'
+  - '.github/workflows/release.yml'
+  - '.github/workflows/ci.yml'
+  - '.github/filters/**'
+  - '.github/*.jq'
+actions:
+  - '.github/**'

@@ -5,50 +5,34 @@ SPDX-License-Identifier: MIT OR Apache-2.0
 
 # Contributing
 
-Contributions are welcome. Keep detection conservative: uncertainty must produce
-an unselectable result, never a deletion candidate. Add table-driven policy
-tests for new classifications and temporary-root tests for cleanup changes.
+Contributions are welcome.
 
-## Development workflow
+Keep detection conservative: uncertain shortcuts must remain unselectable and must never become deletion candidates.
 
-`mise.toml` defines the fully version-pinned development environment. Install
-it with `mise install`, then use the Go-based devtool as the canonical task
-entry point:
+Add table-driven policy tests for new classifications and temporary-root tests for cleanup changes.
 
-```powershell
-go run ./cmd/devtool ci
-```
+## Development
 
-Run `go run ./cmd/devtool help` for focused commands, including `format`,
-`generate`, `lint`, `test`, `integration`, `coverage`, `module-verify`, `race`,
-`stress`, `fuzz`, `security`, `reuse`, `build`, `release-source`, `release-check`, and
-`release-smoke`. `just` and Lefthook are optional thin wrappers that delegate to
-these commands; no development workflow is implemented in shell or PowerShell
-scripts.
+Trust and install the pinned development tools with `mise trust mise.toml` and `mise install`.
 
-Pull request titles use Conventional Commit subjects because squash merges feed
-those titles directly into the release changelog; CI validates the title on the
-server in addition to the local commit-message hook.
+Run the common local checks with `mise x -- go run ./cmd/devtool ci`.
 
-The Windows product build is CGO-free. Running `devtool race` locally requires a
-race-supported C compiler because that is a Go race-detector requirement; the
-required GitHub check runs it on Ubuntu. Containment fuzzing runs on Windows so
-that `filepath` uses the same semantics as the product. Before changing release
-packaging, run `devtool release-smoke` to build and validate the x64/arm64 ZIPs,
-checksums, SPDX SBOMs, and CycloneDX SBOMs.
+Use `mise x -- go run ./cmd/devtool help` to see focused checks.
 
-Generated Bash, Zsh, Fish, and PowerShell completions are release assets, not
-development automation. Keep them synchronized with the devtool's `generate`
-command, but do not place development logic in them.
+After a Go upgrade, rebuild previously installed analysis tools with `mise install --force go:golang.org/x/vuln/cmd/govulncheck go:github.com/google/osv-scanner/v2/cmd/osv-scanner`.
 
-## Pull request checklist
+The local `ci` task covers formatting, module integrity, generated files, lint, vet, tests, Windows integration, coverage, security, license policy, build, and fast release checks.
 
-- [ ] `go run ./cmd/devtool ci` passes in the mise-managed environment.
-- [ ] Relevant race, fuzz, or release-smoke checks pass for affected code.
-- [ ] New behavior and important failure paths have tests.
-- [ ] User-facing documentation and generated completions are current.
-- [ ] New files have SPDX metadata and pass REUSE validation.
-- [ ] Commits use Conventional Commits.
+Pull request CI runs metadata checks and selects native Windows quality, race, policy, and fast release-configuration checks according to the changed files.
 
-By contributing, you agree that your contribution is licensed under the
-`MIT OR Apache-2.0` expression.
+Extended fuzzing, repeated stress checks, and cross-platform campaigns belong to release verification or a focused investigation.
+
+Rust is not required for this project.
+
+## Pull requests
+
+Use Conventional Commit syntax in pull request titles because squash-merge titles appear in the release changelog.
+
+Add tests for new behavior and important failure paths, and update user-facing documentation or generated completions when needed.
+
+By contributing, you agree that your contribution is licensed under the `MIT OR Apache-2.0` expression.

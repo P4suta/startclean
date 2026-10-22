@@ -4,21 +4,56 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
+  merge_group:
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  GOMAXPROCS: "2"
+
 jobs:
+  changes:
+    name: Workflow and metadata checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      runtime: ${{ steps.changes.outputs.runtime }}
+      release: ${{ steps.changes.outputs.release }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: changes
+        with:
+          base: ${{ github.event.merge_group.base_sha || github.event.repository.default_branch }}
+          filters: .github/filters/ci.yml
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: v2026.10.14
+          install_args: jq actionlint typos taplo uv pipx:reuse gitleaks
+      - run: actionlint
+      - run: jq -L .github -n -e -f .github/check-required.jq
+      - run: typos
+      - run: taplo format --check
+      - run: reuse lint
+      - run: gitleaks git . --redact
+
   windows:
     name: Windows quality gate
+    needs: changes
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.runtime == 'true'
     runs-on: windows-2025
     timeout-minutes: 30
     steps:
@@ -30,7 +65,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: 1.26.6
+          go-version: 1.27.3
           cache: true
 
       - name: Verify module integrity
@@ -51,9 +86,6 @@ jobs:
       - name: Real Shell Link COM integration test
         run: go run ./cmd/devtool integration
 
-      - name: Stress Windows deletion safety and COM integration
-        run: go run ./cmd/devtool stress
-
       - name: Restore pinned coverage tool
         id: coverage-tools-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -71,17 +103,10 @@ jobs:
       - name: Build Windows x64 and arm64
         run: go run ./cmd/devtool build
 
-      - name: Upload test binaries and coverage
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: windows-ci-artifacts
-          path: |
-            coverage*.out
-            dist/*.exe
-          if-no-files-found: error
-
   race:
     name: Race detector
+    needs: changes
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.runtime == 'true'
     runs-on: windows-2025
     timeout-minutes: 20
     steps:
@@ -93,42 +118,16 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: 1.26.6
+          go-version: 1.27.3
           cache: true
 
       - name: Run race-enabled tests
         run: go run ./cmd/devtool race
 
-  fuzz:
-    name: Safety fuzzing
-    runs-on: windows-2025
-    timeout-minutes: 15
-    steps:
-      - name: Check out source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version: 1.26.6
-          cache: true
-
-      - name: Fuzz deletion-safety invariants
-        run: go run ./cmd/devtool fuzz
-
-      - name: Preserve newly discovered fuzz failures
-        if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: fuzz-failure-corpus-${{ github.run_id }}-${{ github.run_attempt }}
-          path: internal/core/testdata/fuzz/**
-          if-no-files-found: ignore
-          retention-days: 14
-
   policy:
     name: Lint, security, license, and release policy
+    needs: changes
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.runtime == 'true'
     runs-on: windows-2025
     timeout-minutes: 30
     steps:
@@ -138,11 +137,10 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          go-version: 1.26.6
-          cache: true
+          version: v2026.10.14
+          install_args: go golangci-lint actionlint typos taplo uv pipx:reuse gitleaks goreleaser go:golang.org/x/vuln/cmd/govulncheck go:github.com/google/osv-scanner/v2/cmd/osv-scanner
 
       - name: Validate pull request title
         if: github.event_name == 'pull_request'
@@ -150,54 +148,16 @@ jobs:
           STARTCLEAN_PR_TITLE: ${{ github.event.pull_request.title }}
         run: go run ./cmd/devtool pr-title
 
-      - name: Restore pinned Go policy tools
-        id: policy-go-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/go/bin
-          key: policy-go-${{ runner.os }}-${{ hashFiles('mise.toml') }}
-
-      - name: Restore pinned Rust policy tools
-        id: policy-rust-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cargo/.crates.toml
-            ~/.cargo/.crates2.json
-            ~/.cargo/bin
-            ~/.cargo/git/db
-            ~/.cargo/registry/cache
-            ~/.cargo/registry/index
-          key: policy-cargo-${{ runner.os }}-${{ hashFiles('mise.toml') }}
-
-      - name: Install pinned Go policy tools
-        if: steps.policy-go-cache.outputs.cache-hit != 'true'
-        run: go run ./cmd/devtool tools policy-go
-
-      - name: Install pinned Rust policy tools
-        if: steps.policy-rust-cache.outputs.cache-hit != 'true'
-        run: go run ./cmd/devtool tools policy-rust
-
-      - name: Install pinned Python policy tools
-        run: go run ./cmd/devtool tools policy-python
-
       - name: Lint source, workflows, and prose
         run: go run ./cmd/devtool lint
 
       - name: Vulnerability and secret scans
         run: go run ./cmd/devtool security
 
-      - name: REUSE 3.3 compliance
-        run: go run ./cmd/devtool reuse
-
-      - name: Verify release source
-        run: go run ./cmd/devtool release-source
-
-      - name: GoReleaser configuration
-        run: go run ./cmd/devtool release-check
-
-  release-smoke:
-    name: Release snapshot smoke test
+  release-check:
+    name: Release configuration
+    needs: changes
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.release == 'true'
     runs-on: windows-2025
     timeout-minutes: 30
     steps:
@@ -207,40 +167,32 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          go-version: 1.26.6
-          cache: true
+          version: v2026.10.14
+          install_args: go goreleaser
 
-      - name: Restore pinned release tools
-        id: release-tools-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/go/bin
-          key: release-go-${{ runner.os }}-${{ hashFiles('mise.toml') }}
+      - name: Validate release configuration
+        run: go run ./cmd/devtool release-check
 
-      - name: Install pinned release tools
-        if: steps.release-tools-cache.outputs.cache-hit != 'true'
-        run: go run ./cmd/devtool tools release
-
-      - name: Build and verify release snapshot
-        run: go run ./cmd/devtool release-smoke
-
-  # The one status check branch protection requires,
-  # named the same in every P4suta repository.
-  # It passes only when every job it needs succeeded or was skipped.
   required:
     name: required
     if: always()
-    needs: [windows, race, fuzz, policy, release-smoke]
-    runs-on: ubuntu-latest
+    needs: [changes, windows, race, policy, release-check]
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
-    permissions: {}
     steps:
-      - name: Fail unless every needed job succeeded or was skipped
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: v2026.10.14
+          install_args: jq
+      - name: Require every selected job to succeed
         env:
-          RESULTS: ${{ toJSON(needs.*.result) }}
+          RESULTS: ${{ toJSON(needs) }}
+          FULL: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
-          echo "${RESULTS}"
-          jq -e 'all(.[]; IN("success", "skipped"))' <<< "${RESULTS}"
+          set -euo pipefail
+          jq -L .github -e --argjson full "$FULL" 'include "required"; required($full)' <<< "$RESULTS"

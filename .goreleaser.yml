@@ -32,6 +32,9 @@ archives:
       {{- if eq .Arch "amd64" }}x86_64{{ else }}{{ .Arch }}{{ end }}
     files:
       - README.md
+      - docs/README.md
+      - LICENSE-MIT
+      - LICENSE-APACHE
       - LICENSES/*
       - completions/*
 

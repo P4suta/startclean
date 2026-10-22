@@ -1249,7 +1249,7 @@ func TestPolicyToolsAreExactPinnedInstalls(t *testing.T) {
 		t.Fatalf("install policy tools: %v", err)
 	}
 	want := []invocation{
-		{name: "go", args: []string{"install", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2"}},
+		{name: "go", args: []string{"install", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0"}},
 		{name: "go", args: []string{"install", "golang.org/x/vuln/cmd/govulncheck@v1.6.0"}},
 		{name: "go", args: []string{"install", "github.com/rhysd/actionlint/cmd/actionlint@v1.7.12"}},
 		{name: "go", args: []string{"install", "github.com/goreleaser/goreleaser/v2@v2.17.1"}},
@@ -1294,7 +1294,7 @@ func TestPolicyToolSubsetsAreExactPinnedInstalls(t *testing.T) {
 			name: "Go",
 			set:  "policy-go",
 			want: []invocation{
-				{name: "go", args: []string{"install", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2"}},
+				{name: "go", args: []string{"install", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0"}},
 				{name: "go", args: []string{"install", "golang.org/x/vuln/cmd/govulncheck@v1.6.0"}},
 				{name: "go", args: []string{"install", "github.com/rhysd/actionlint/cmd/actionlint@v1.7.12"}},
 				{name: "go", args: []string{"install", "github.com/goreleaser/goreleaser/v2@v2.17.1"}},
@@ -1471,8 +1471,11 @@ func TestPinnedToolchainFilesStaySynchronized(t *testing.T) {
 	if !reflect.DeepEqual(configured, locked) {
 		t.Fatalf("mise.toml tools and mise.lock tools differ:\nconfigured=%#v\nlocked=%#v", configured, locked)
 	}
-	if len(configured) != 15 {
-		t.Fatalf("pinned tool count = %d, want 15", len(configured))
+	if len(configured) != 16 {
+		t.Fatalf("pinned tool count = %d, want 16", len(configured))
+	}
+	if configured["jq"] != "1.8.2" {
+		t.Errorf("required-check validator version = %q, want 1.8.2", configured["jq"])
 	}
 
 	devtoolPins := map[string]string{
@@ -1537,7 +1540,7 @@ func TestCIStepsIncludeModuleVerificationButExcludeHeavyTasks(t *testing.T) {
 	if !seen["module-verify"] {
 		t.Error("CI steps do not include module-verify")
 	}
-	for _, heavy := range []string{"race", "release-smoke"} {
+	for _, heavy := range []string{"race", "fuzz", "stress", "release-smoke"} {
 		if seen[heavy] {
 			t.Errorf("CI steps unexpectedly include %s", heavy)
 		}

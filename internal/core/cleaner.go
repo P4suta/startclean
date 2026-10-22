@@ -138,8 +138,7 @@ func (e validationError) Error() string { return e.err.Error() }
 func (e validationError) Unwrap() error { return e.err }
 
 func reasonFromValidation(err error) ReasonCode {
-	var validation validationError
-	if errors.As(err, &validation) {
+	if validation, ok := errors.AsType[validationError](err); ok {
 		return validation.reason
 	}
 	return ReasonChangedSinceScan
@@ -152,8 +151,7 @@ func reasonFromDeletion(err error) ReasonCode {
 	case errors.Is(err, ErrUnsafeDeletionPath):
 		return ReasonUnsafeLink
 	}
-	var validation validationError
-	if errors.As(err, &validation) {
+	if validation, ok := errors.AsType[validationError](err); ok {
 		return validation.reason
 	}
 	return ReasonDeleteFailure
