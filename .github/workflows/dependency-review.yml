@@ -7,6 +7,11 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/dependency-review-config.yml'
+      - '.github/workflows/dependency-review.yml'
 
 permissions:
   contents: read

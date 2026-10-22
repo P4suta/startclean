@@ -44,7 +44,7 @@ const (
 	projectModulePath    = "github.com/P4suta/startclean"
 	maxReleaseBinarySize = 64 << 20
 
-	golangciLintInstall = "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2"
+	golangciLintInstall = "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0"
 	govulncheckInstall  = "golang.org/x/vuln/cmd/govulncheck@v1.6.0"
 	actionlintInstall   = "github.com/rhysd/actionlint/cmd/actionlint@v1.7.12"
 	goreleaserInstall   = "github.com/goreleaser/goreleaser/v2@v2.17.1"
@@ -61,6 +61,9 @@ const (
 var requiredReleaseArchiveFiles = []string{
 	"startclean.exe",
 	"README.md",
+	"docs/README.md",
+	"LICENSE-MIT",
+	"LICENSE-APACHE",
 	"LICENSES/Apache-2.0.txt",
 	"LICENSES/MIT.txt",
 	"completions/_startclean",
@@ -93,7 +96,6 @@ var ciSteps = [][]string{
 	{"vet"},
 	{"test"},
 	{"integration"},
-	{"stress"},
 	{"coverage"},
 	{"security"},
 	{"reuse"},
@@ -1803,12 +1805,10 @@ func findRepositoryRoot() (string, error) {
 }
 
 func errorExitCode(err error) int {
-	var usage *usageError
-	if errors.As(err, &usage) {
+	if _, ok := errors.AsType[*usageError](err); ok {
 		return 2
 	}
-	var processError *exec.ExitError
-	if errors.As(err, &processError) {
+	if processError, ok := errors.AsType[*exec.ExitError](err); ok {
 		if code := processError.ExitCode(); code >= 0 {
 			return code
 		}

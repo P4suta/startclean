@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2026 startclean contributors <https://github.com/P4suta/startclean/graphs/contributors>
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+name = "startclean"
+summary = "Find and remove orphaned Windows Start Menu shortcuts with explicit review"
+install = """
+git clone https://github.com/P4suta/startclean.git
+cd startclean
+mise trust mise.toml
+mise install go
+mise x go -- go build -o startclean.exe ./cmd/startclean"""
+usage_language = "powershell"
+usage = '.\startclean.exe scan'
+documentation_index = true
+copyright = "2026 startclean contributors"
+license = "MIT OR Apache-2.0"
+
+[[consent]]
+contributor = "Yasunobu"
+evidence = "https://github.com/P4suta/startclean/commit/6f8de48ccd49f0dd417c7a59e256d69ef6424fbc"

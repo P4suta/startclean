@@ -10,8 +10,36 @@ on:
 permissions:
   contents: read
 
+env:
+  GOMAXPROCS: "2"
+
 jobs:
+  verify:
+    name: Verify release source (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025, windows-11-arm]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 1.27.3
+          cache: true
+      - run: go run ./cmd/devtool test
+      - run: go run ./cmd/devtool integration
+      - run: go run ./cmd/devtool race
+        if: runner.arch == 'X64'
+      - run: go run ./cmd/devtool stress
+      - run: go run ./cmd/devtool fuzz
+
   release:
+    needs: verify
     runs-on: windows-2025
     timeout-minutes: 30
     permissions:
@@ -23,13 +51,14 @@ jobs:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: 1.26.6
+          go-version: 1.27.3
           cache: true
 
       - name: Verify release tag is from main
@@ -45,9 +74,6 @@ jobs:
       - name: Install pinned release tools
         if: steps.release-tools-cache.outputs.cache-hit != 'true'
         run: go run ./cmd/devtool tools release
-
-      - name: Test release source
-        run: go run ./cmd/devtool test
 
       - name: Validate release inputs
         run: go run ./cmd/devtool release-check
