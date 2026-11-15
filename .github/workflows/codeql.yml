@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   changes:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -82,7 +82,7 @@ jobs:
     name: Analyze GitHub Actions
     needs: changes
     if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.actions == 'true'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     permissions:
       contents: read
