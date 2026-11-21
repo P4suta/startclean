@@ -42,6 +42,22 @@ url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8
 url_api = "https://api.github.com/repos/gitleaks/gitleaks/releases/assets/378333178"
 
 [[tools.go]]
+version = "1.27.4"
+backend = "core:go"
+
+[tools.go."platforms.linux-x64"]
+checksum = "sha256:7226736c2339719cda28fbf3a54d71aa63bcefe376e98cef00034268dab24840"
+url = "https://dl.google.com/go/go1.27.4.linux-amd64.tar.gz"
+
+[tools.go."platforms.windows-arm64"]
+checksum = "sha256:9e7a72565792b8ab370b37ac9ac109799237abacb39ff2f541c438b963c0cc64"
+url = "https://dl.google.com/go/go1.27.4.windows-arm64.zip"
+
+[tools.go."platforms.windows-x64"]
+checksum = "sha256:178ab98950ac69ab25069307dc6ade79f3816e414cce95b4da166a115cde1e7e"
+url = "https://dl.google.com/go/go1.27.4.windows-amd64.zip"
+
+[[tools.go]]
 version = "1.27.3"
 backend = "core:go"
 
@@ -58,11 +74,11 @@ checksum = "sha256:f26081f438319757f8a1b46d7d0b2c5ec7583d4038e485e0aa725cfde7885
 url = "https://dl.google.com/go/go1.27.3.windows-amd64.zip"
 
 [[tools."go:github.com/google/osv-scanner/v2/cmd/osv-scanner"]]
-version = "2.3.8"
+version = "2.7.1"
 backend = "go:github.com/google/osv-scanner/v2/cmd/osv-scanner"
 
 [[tools."go:github.com/vladopajic/go-test-coverage/v2"]]
-version = "2.19.0"
+version = "2.23.0"
 backend = "go:github.com/vladopajic/go-test-coverage/v2"
 
 [[tools."go:golang.org/x/vuln/cmd/govulncheck"]]
@@ -92,25 +108,25 @@ url_api = "https://api.github.com/repos/golangci/golangci-lint/releases/assets/6
 provenance = "github-attestations"
 
 [[tools.goreleaser]]
-version = "2.17.1"
+version = "2.20.2"
 backend = "aqua:goreleaser/goreleaser"
 
 [tools.goreleaser."platforms.linux-x64"]
-checksum = "sha256:a99bbc7ae0d8d897b07c4c497a9b62f222558804715ef219d1af05a7e417bc80"
-url = "https://github.com/goreleaser/goreleaser/releases/download/v2.17.1/goreleaser_Linux_x86_64.tar.gz"
-url_api = "https://api.github.com/repos/goreleaser/goreleaser/releases/assets/490565870"
+checksum = "sha256:f3d24969a7389a46613875711d15a96d8f6ef1553d84c6ace09d69ac1e7d44c0"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.20.2/goreleaser_Linux_x86_64.tar.gz"
+url_api = "https://api.github.com/repos/goreleaser/goreleaser/releases/assets/739708556"
 provenance = "github-attestations"
 
 [tools.goreleaser."platforms.windows-arm64"]
-checksum = "sha256:6eec917c98df13ba83b8bb9c261e017df2d1d5b08e525442b5918325627fdf91"
-url = "https://github.com/goreleaser/goreleaser/releases/download/v2.17.1/goreleaser_Windows_arm64.zip"
-url_api = "https://api.github.com/repos/goreleaser/goreleaser/releases/assets/490565849"
+checksum = "sha256:cf152a7d59e3d7d9cf278c7463e3f2b26cc28555e8fdea95c1dcfa773cb385f1"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.20.2/goreleaser_Windows_arm64.zip"
+url_api = "https://api.github.com/repos/goreleaser/goreleaser/releases/assets/739708711"
 provenance = "github-attestations"
 
 [tools.goreleaser."platforms.windows-x64"]
-checksum = "sha256:53314ce7cc16c3229f2d3b98a932c1618c427964eb2170a1efafbdfa862a556f"
-url = "https://github.com/goreleaser/goreleaser/releases/download/v2.17.1/goreleaser_Windows_x86_64.zip"
-url_api = "https://api.github.com/repos/goreleaser/goreleaser/releases/assets/490565847"
+checksum = "sha256:d230d6def8b6059b277d472a2790501516b429ffe83b91469daad8b7736b8a5d"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.20.2/goreleaser_Windows_x86_64.zip"
+url_api = "https://api.github.com/repos/goreleaser/goreleaser/releases/assets/739708670"
 provenance = "github-attestations"
 
 [[tools.jq]]
@@ -136,71 +152,77 @@ url_api = "https://api.github.com/repos/jqlang/jq/releases/assets/453012788"
 provenance = "github-attestations"
 
 [[tools.just]]
-version = "1.57.0"
+version = "1.59.0"
 backend = "aqua:casey/just"
 
 [tools.just."platforms.linux-x64"]
-checksum = "sha256:45b548094283cb9739af8f13273b8cddeee869f5b4ef2bb631b1f311cb566155"
-url = "https://github.com/casey/just/releases/download/1.57.0/just-1.57.0-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/casey/just/releases/assets/481976790"
+checksum = "sha256:409044617b6f06517c1035e55ca38c8c856ff8b650e41bc2aa1ef82d5903a23e"
+checksum_source = "mise-versions"
+url = "https://github.com/casey/just/releases/download/1.59.0/just-1.59.0-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/casey/just/releases/assets/642949555"
 
 [tools.just."platforms.windows-arm64"]
-checksum = "sha256:4c7391d17cb1d17b758b52004ee6411372b8a13ff37c3c9b9031625cb6026e09"
-url = "https://github.com/casey/just/releases/download/1.57.0/just-1.57.0-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/casey/just/releases/assets/481977734"
+checksum = "sha256:9c5463e2d0974e31bee71346aa5cbf19167de1585a4abc1bae7b3b04604ea9c0"
+checksum_source = "mise-versions"
+url = "https://github.com/casey/just/releases/download/1.59.0/just-1.59.0-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/casey/just/releases/assets/643131303"
 
 [tools.just."platforms.windows-x64"]
-checksum = "sha256:4c7391d17cb1d17b758b52004ee6411372b8a13ff37c3c9b9031625cb6026e09"
-url = "https://github.com/casey/just/releases/download/1.57.0/just-1.57.0-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/casey/just/releases/assets/481977734"
+checksum = "sha256:9c5463e2d0974e31bee71346aa5cbf19167de1585a4abc1bae7b3b04604ea9c0"
+checksum_source = "mise-versions"
+url = "https://github.com/casey/just/releases/download/1.59.0/just-1.59.0-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/casey/just/releases/assets/643131303"
 
 [[tools.lefthook]]
-version = "2.1.10"
+version = "2.2.2"
 backend = "aqua:evilmartians/lefthook"
 
 [tools.lefthook."platforms.linux-x64"]
-checksum = "sha256:0b14162a0bb2f0c64ae0759f6102f6e19c4d00981666a8ac73d4f5a6878ada4f"
-url = "https://github.com/evilmartians/lefthook/releases/download/v2.1.10/lefthook_2.1.10_Linux_x86_64.gz"
-url_api = "https://api.github.com/repos/evilmartians/lefthook/releases/assets/470227493"
+checksum = "sha256:2b8d7fd52771f26d7a50260ef10cd6fe704d66f60102e566362b84da09884ab7"
+url = "https://github.com/evilmartians/lefthook/releases/download/v2.2.2/lefthook_2.2.2_Linux_x86_64.gz"
+url_api = "https://api.github.com/repos/evilmartians/lefthook/releases/assets/636518865"
 provenance = "github-attestations"
 
 [tools.lefthook."platforms.windows-arm64"]
-checksum = "sha256:933b3c2aaa016d84cd2b3926ea9b99c3febdc6bb778bfd854640223a3a4c5e50"
-url = "https://github.com/evilmartians/lefthook/releases/download/v2.1.10/lefthook_2.1.10_Windows_arm64.gz"
-url_api = "https://api.github.com/repos/evilmartians/lefthook/releases/assets/470227473"
+checksum = "sha256:87fe02d0ead34d28f2241ecd974d46a633838636e20148b221242c9ee41880a9"
+url = "https://github.com/evilmartians/lefthook/releases/download/v2.2.2/lefthook_2.2.2_Windows_arm64.gz"
+url_api = "https://api.github.com/repos/evilmartians/lefthook/releases/assets/636518872"
 provenance = "github-attestations"
 
 [tools.lefthook."platforms.windows-x64"]
-checksum = "sha256:beabbce824641ae71229ed11dd8634f47148921cb649d25c90441b737481494a"
-url = "https://github.com/evilmartians/lefthook/releases/download/v2.1.10/lefthook_2.1.10_Windows_x86_64.gz"
-url_api = "https://api.github.com/repos/evilmartians/lefthook/releases/assets/470227505"
+checksum = "sha256:980579c96db6df0064f7d831dd409cb9eac1c993a13bc936574507e9e075be52"
+url = "https://github.com/evilmartians/lefthook/releases/download/v2.2.2/lefthook_2.2.2_Windows_x86_64.gz"
+url_api = "https://api.github.com/repos/evilmartians/lefthook/releases/assets/636518867"
 provenance = "github-attestations"
 
 [[tools."pipx:reuse"]]
-version = "6.2.0"
+version = "6.3.0"
 backend = "pipx:reuse"
 
 [tools."pipx:reuse".options]
 extras = "charset-normalizer"
 
 [[tools.syft]]
-version = "1.50.0"
+version = "1.57.2"
 backend = "aqua:anchore/syft"
 
 [tools.syft."platforms.linux-x64"]
-checksum = "sha256:bf7b29ff57f06da30918266a0e1c2885a8f99784798d1bdb1628886aa015d788"
-url = "https://github.com/anchore/syft/releases/download/v1.50.0/syft_1.50.0_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/anchore/syft/releases/assets/493004612"
+checksum = "sha256:ad92bd3ec1b94a3df01d4d0aec199afa9c42b72e86da436ff5f837914d32706b"
+url = "https://github.com/anchore/syft/releases/download/v1.57.2/syft_1.57.2_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/anchore/syft/releases/assets/756262255"
+provenance = "cosign"
 
 [tools.syft."platforms.windows-arm64"]
-checksum = "sha256:815ee6973ec5dff6a671d7f41b0e78835a8c45b91d5a39f4743ea1cee833d3be"
-url = "https://github.com/anchore/syft/releases/download/v1.50.0/syft_1.50.0_windows_amd64.zip"
-url_api = "https://api.github.com/repos/anchore/syft/releases/assets/493004607"
+checksum = "sha256:0a10e03ffd124c304fd7e7491262dba2e5f68eb12378b106d7525146675b2e3a"
+url = "https://github.com/anchore/syft/releases/download/v1.57.2/syft_1.57.2_windows_amd64.zip"
+url_api = "https://api.github.com/repos/anchore/syft/releases/assets/756262238"
+provenance = "cosign"
 
 [tools.syft."platforms.windows-x64"]
-checksum = "sha256:815ee6973ec5dff6a671d7f41b0e78835a8c45b91d5a39f4743ea1cee833d3be"
-url = "https://github.com/anchore/syft/releases/download/v1.50.0/syft_1.50.0_windows_amd64.zip"
-url_api = "https://api.github.com/repos/anchore/syft/releases/assets/493004607"
+checksum = "sha256:0a10e03ffd124c304fd7e7491262dba2e5f68eb12378b106d7525146675b2e3a"
+url = "https://github.com/anchore/syft/releases/download/v1.57.2/syft_1.57.2_windows_amd64.zip"
+url_api = "https://api.github.com/repos/anchore/syft/releases/assets/756262238"
+provenance = "cosign"
 
 [[tools.taplo]]
 version = "0.10.0"
@@ -219,42 +241,45 @@ url = "https://github.com/tamasfe/taplo/releases/download/0.10.0/taplo-windows-x
 url_api = "https://api.github.com/repos/tamasfe/taplo/releases/assets/257323062"
 
 [[tools.typos]]
-version = "1.48.0"
+version = "1.52.2"
 backend = "aqua:crate-ci/typos"
 
 [tools.typos."platforms.linux-x64"]
-checksum = "sha256:72a930c9a94fc3914aa56835c5b859c892a797d40c1c42638b98d93f16ff519c"
-url = "https://github.com/crate-ci/typos/releases/download/v1.48.0/typos-v1.48.0-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/462429902"
+checksum = "sha256:3b13d1291281d39d01822e54035636487a7a0f228e70097899b1e33aeb0e7e93"
+checksum_source = "mise-versions"
+url = "https://github.com/crate-ci/typos/releases/download/v1.52.2/typos-v1.52.2-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/733787189"
 
 [tools.typos."platforms.windows-arm64"]
-checksum = "sha256:ce018a2352da7c1b23bd2684019ee279d2080dc063087020e80c1247d11b0743"
-url = "https://github.com/crate-ci/typos/releases/download/v1.48.0/typos-v1.48.0-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/462430871"
+checksum = "sha256:ab79036832cea0f2a21aa947731d39512250cc0f7a6a2f6add26262738a8cc11"
+checksum_source = "mise-versions"
+url = "https://github.com/crate-ci/typos/releases/download/v1.52.2/typos-v1.52.2-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/733790297"
 
 [tools.typos."platforms.windows-x64"]
-checksum = "sha256:ce018a2352da7c1b23bd2684019ee279d2080dc063087020e80c1247d11b0743"
-url = "https://github.com/crate-ci/typos/releases/download/v1.48.0/typos-v1.48.0-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/462430871"
+checksum = "sha256:ab79036832cea0f2a21aa947731d39512250cc0f7a6a2f6add26262738a8cc11"
+checksum_source = "mise-versions"
+url = "https://github.com/crate-ci/typos/releases/download/v1.52.2/typos-v1.52.2-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/crate-ci/typos/releases/assets/733790297"
 
 [[tools.uv]]
-version = "0.12.0"
+version = "0.13.9"
 backend = "aqua:astral-sh/uv"
 
 [tools.uv."platforms.linux-x64"]
-checksum = "sha256:3340a9d8cffc4d801bc1a7459ebfaf5790c79400720d9b6963d806f058526684"
-url = "https://github.com/astral-sh/uv/releases/download/0.12.0/uv-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/493071451"
+checksum = "sha256:a7fbaff2b9a271d85c1bdb540941090fd1ce011797b4abeb48e4dcd39c2471d5"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.9/uv-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/758513954"
 provenance = "github-attestations"
 
 [tools.uv."platforms.windows-arm64"]
-checksum = "sha256:68200e25de594df92387186bbfb9d9df606ec1d87efaa0ae0c7f690970e53db6"
-url = "https://github.com/astral-sh/uv/releases/download/0.12.0/uv-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/493071443"
+checksum = "sha256:edd61f7f5728a56cc62455386661860bdfc7bab65872f39b0c25bdcc1d8e1beb"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.9/uv-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/758513940"
 provenance = "github-attestations"
 
 [tools.uv."platforms.windows-x64"]
-checksum = "sha256:68200e25de594df92387186bbfb9d9df606ec1d87efaa0ae0c7f690970e53db6"
-url = "https://github.com/astral-sh/uv/releases/download/0.12.0/uv-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/493071443"
+checksum = "sha256:edd61f7f5728a56cc62455386661860bdfc7bab65872f39b0c25bdcc1d8e1beb"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.9/uv-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/758513940"
 provenance = "github-attestations"

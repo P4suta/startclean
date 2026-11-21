@@ -41,7 +41,7 @@ jobs:
           filters: .github/filters/ci.yml
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: v2026.10.14
+          version: v2026.11.10
           install_args: jq actionlint typos taplo uv pipx:reuse gitleaks
       - run: actionlint
       - run: jq -L .github -n -e -f .github/check-required.jq
@@ -63,14 +63,14 @@ jobs:
           persist-credentials: false
 
       - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
-          go-version: 1.27.3
+          go-version: 1.27.4
           cache: true
 
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: v2026.10.14
+          version: v2026.11.10
           install_args: go golangci-lint go:golang.org/x/vuln/cmd/govulncheck go:github.com/google/osv-scanner/v2/cmd/osv-scanner
 
       - name: Validate pull request title
@@ -141,7 +141,7 @@ jobs:
 
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: v2026.10.14
+          version: v2026.11.10
           install_args: go goreleaser
 
       - name: Validate release configuration
@@ -159,7 +159,7 @@ jobs:
           persist-credentials: false
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: v2026.10.14
+          version: v2026.11.10
           install_args: jq
       - name: Require every selected job to succeed
         env:
