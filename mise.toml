@@ -2,22 +2,22 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 
 [tools]
-go = "1.27.3"
-just = "1.57.0"
-lefthook = "2.1.10"
+go = "1.27.4"
+just = "1.59.0"
+lefthook = "2.2.2"
 golangci-lint = "2.15.0"
-goreleaser = "2.17.1"
+goreleaser = "2.20.2"
 actionlint = "1.7.12"
 jq = "1.8.2"
-typos = "1.48.0"
+typos = "1.52.2"
 taplo = "0.10.0"
-syft = "1.50.0"
+syft = "1.57.2"
 gitleaks = "8.30.1"
-uv = "0.12.0"
+uv = "0.13.9"
 "go:golang.org/x/vuln/cmd/govulncheck" = "1.6.0"
-"go:github.com/google/osv-scanner/v2/cmd/osv-scanner" = "2.3.8"
-"go:github.com/vladopajic/go-test-coverage/v2" = "2.19.0"
-"pipx:reuse" = { version = "6.2.0", depends = ["uv"], extras = "charset-normalizer" }
+"go:github.com/google/osv-scanner/v2/cmd/osv-scanner" = "2.7.1"
+"go:github.com/vladopajic/go-test-coverage/v2" = "2.23.0"
+"pipx:reuse" = { version = "6.3.0", depends = ["uv"], extras = "charset-normalizer" }
 
 [settings]
 experimental = true
