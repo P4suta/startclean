@@ -31,7 +31,28 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Select the reviewed Go license exception
+        id: licenses
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          exception='pkg:golang/golang.org/x/sys@0.50.0'
+          accepted=$(gh api --paginate --slurp \
+            "repos/$GITHUB_REPOSITORY/dependency-graph/compare/$BASE_SHA...$HEAD_SHA" |
+            jq -r --arg exception "$exception" '
+              [.[][] | select(.change_type == "added" and .ecosystem == "gomod" and
+                (.name | ascii_downcase) == "golang.org/x/sys")] |
+              if length > 0 and all(.[]; .package_url == $exception and
+                .license == "BSD-3-Clause AND LicenseRef-scancode-google-patent-license-golang")
+              then $exception else "" end')
+          printf 'accepted=%s\n' "$accepted" >> "$GITHUB_OUTPUT"
+
       - name: Review dependency changes
         uses: actions/dependency-review-action@bbc44d14a204704ccc493733616cd1e93a0321ec # v5.0.1
         with:
           config-file: ./.github/dependency-review-config.yml
+          allow-dependencies-licenses: ${{ steps.licenses.outputs.accepted }}
