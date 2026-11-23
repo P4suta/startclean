@@ -47,15 +47,15 @@ const (
 	golangciLintInstall = "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0"
 	govulncheckInstall  = "golang.org/x/vuln/cmd/govulncheck@v1.6.0"
 	actionlintInstall   = "github.com/rhysd/actionlint/cmd/actionlint@v1.7.12"
-	goreleaserInstall   = "github.com/goreleaser/goreleaser/v2@v2.17.1"
+	goreleaserInstall   = "github.com/goreleaser/goreleaser/v2@v2.20.2"
 	gitleaksInstall     = "github.com/zricethezav/gitleaks/v8@v8.30.1"
-	osvScannerInstall   = "github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.3.8"
-	syftInstall         = "github.com/anchore/syft/cmd/syft@v1.50.0"
-	coverageInstall     = "github.com/vladopajic/go-test-coverage/v2@v2.19.0"
-	typosVersion        = "1.48.0"
+	osvScannerInstall   = "github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.7.1"
+	syftInstall         = "github.com/anchore/syft/cmd/syft@v1.57.2"
+	coverageInstall     = "github.com/vladopajic/go-test-coverage/v2@v2.23.0"
+	typosVersion        = "1.52.2"
 	taploVersion        = "0.10.0"
-	uvInstall           = "uv==0.12.0"
-	reuseInstall        = "reuse[charset-normalizer]==6.2.0"
+	uvInstall           = "uv==0.13.9"
+	reuseInstall        = "reuse[charset-normalizer]==6.3.0"
 )
 
 var requiredReleaseArchiveFiles = []string{

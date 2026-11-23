@@ -15,8 +15,8 @@ syft = "1.57.2"
 gitleaks = "8.30.1"
 uv = "0.13.9"
 "go:golang.org/x/vuln/cmd/govulncheck" = "1.6.0"
-"go:github.com/google/osv-scanner/v2/cmd/osv-scanner" = "v2.7.1"
-"go:github.com/vladopajic/go-test-coverage/v2" = "v2.23.0"
+"go:github.com/google/osv-scanner/v2/cmd/osv-scanner" = "2.7.1"
+"go:github.com/vladopajic/go-test-coverage/v2" = "2.23.0"
 "pipx:reuse" = { version = "6.3.0", depends = ["uv"], extras = "charset-normalizer" }
 
 [settings]

@@ -1220,7 +1220,7 @@ func TestReuseFallsBackToPinnedUVXInvocation(t *testing.T) {
 		name: "uvx",
 		args: []string{
 			"--from",
-			"reuse[charset-normalizer]==6.2.0",
+			"reuse[charset-normalizer]==6.3.0",
 			"reuse",
 			"lint",
 		},
@@ -1252,16 +1252,16 @@ func TestPolicyToolsAreExactPinnedInstalls(t *testing.T) {
 		{name: "go", args: []string{"install", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0"}},
 		{name: "go", args: []string{"install", "golang.org/x/vuln/cmd/govulncheck@v1.6.0"}},
 		{name: "go", args: []string{"install", "github.com/rhysd/actionlint/cmd/actionlint@v1.7.12"}},
-		{name: "go", args: []string{"install", "github.com/goreleaser/goreleaser/v2@v2.17.1"}},
+		{name: "go", args: []string{"install", "github.com/goreleaser/goreleaser/v2@v2.20.2"}},
 		{name: "go", args: []string{"install", "github.com/zricethezav/gitleaks/v8@v8.30.1"}},
-		{name: "go", args: []string{"install", "github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.3.8"}},
+		{name: "go", args: []string{"install", "github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.7.1"}},
 		{
 			name: "cargo",
 			args: []string{
 				"install",
 				"typos-cli",
 				"--version",
-				"1.48.0",
+				"1.52.2",
 				"--locked",
 			},
 		},
@@ -1275,7 +1275,7 @@ func TestPolicyToolsAreExactPinnedInstalls(t *testing.T) {
 				"--locked",
 			},
 		},
-		{name: "python", args: []string{"-m", "pip", "install", "uv==0.12.0"}},
+		{name: "python", args: []string{"-m", "pip", "install", "uv==0.13.9"}},
 	}
 	if !reflect.DeepEqual(calls, want) {
 		t.Fatalf("policy install commands = %#v, want %#v", calls, want)
@@ -1297,9 +1297,9 @@ func TestPolicyToolSubsetsAreExactPinnedInstalls(t *testing.T) {
 				{name: "go", args: []string{"install", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0"}},
 				{name: "go", args: []string{"install", "golang.org/x/vuln/cmd/govulncheck@v1.6.0"}},
 				{name: "go", args: []string{"install", "github.com/rhysd/actionlint/cmd/actionlint@v1.7.12"}},
-				{name: "go", args: []string{"install", "github.com/goreleaser/goreleaser/v2@v2.17.1"}},
+				{name: "go", args: []string{"install", "github.com/goreleaser/goreleaser/v2@v2.20.2"}},
 				{name: "go", args: []string{"install", "github.com/zricethezav/gitleaks/v8@v8.30.1"}},
-				{name: "go", args: []string{"install", "github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.3.8"}},
+				{name: "go", args: []string{"install", "github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.7.1"}},
 			},
 		},
 		{
@@ -1308,7 +1308,7 @@ func TestPolicyToolSubsetsAreExactPinnedInstalls(t *testing.T) {
 			want: []invocation{
 				{
 					name: "cargo",
-					args: []string{"install", "typos-cli", "--version", "1.48.0", "--locked"},
+					args: []string{"install", "typos-cli", "--version", "1.52.2", "--locked"},
 				},
 				{
 					name: "cargo",
@@ -1320,7 +1320,7 @@ func TestPolicyToolSubsetsAreExactPinnedInstalls(t *testing.T) {
 			name: "Python",
 			set:  "policy-python",
 			want: []invocation{
-				{name: "python", args: []string{"-m", "pip", "install", "uv==0.12.0"}},
+				{name: "python", args: []string{"-m", "pip", "install", "uv==0.13.9"}},
 			},
 		},
 	}
@@ -1450,9 +1450,9 @@ func TestCoverageAndReleaseToolsAreExactPinnedInstalls(t *testing.T) {
 		t.Fatalf("install release tools: %v", err)
 	}
 	want := []invocation{
-		{name: "go", args: []string{"install", "github.com/vladopajic/go-test-coverage/v2@v2.19.0"}},
-		{name: "go", args: []string{"install", "github.com/goreleaser/goreleaser/v2@v2.17.1"}},
-		{name: "go", args: []string{"install", "github.com/anchore/syft/cmd/syft@v1.50.0"}},
+		{name: "go", args: []string{"install", "github.com/vladopajic/go-test-coverage/v2@v2.23.0"}},
+		{name: "go", args: []string{"install", "github.com/goreleaser/goreleaser/v2@v2.20.2"}},
+		{name: "go", args: []string{"install", "github.com/anchore/syft/cmd/syft@v1.57.2"}},
 	}
 	if !reflect.DeepEqual(calls, want) {
 		t.Fatalf("coverage/release install commands = %#v, want %#v", calls, want)
